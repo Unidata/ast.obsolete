@@ -1,0 +1,5 @@
+1. extensions are useless in a non-interpretive
+   implementation unless there is some way
+   to do the equivalent of "#include" using "import"
+	- soln 1: treat imported files with no package decl
+          as includes.

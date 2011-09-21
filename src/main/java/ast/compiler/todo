@@ -1,0 +1,14 @@
+1. at top level, is the count present?
+2. .exists -> .defined
+3. check for C reserved words and change
+
+
+
+changes to ncStream:
+1.use single Datatype
+2. remove unsigned field
+3. Consider making cdm extensions to netcdf-4
+4. what are all those fields in message Structure?
+5. find better encoding of dimension cases (use enum?)
+6. crc32->md5
+   
