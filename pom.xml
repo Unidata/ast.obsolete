@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- This POM is currently incomplete -->
+
+<!-- =======================================================================
+        Maven Project Configuration File
+     ======================================================================= -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+<groupId>unidata.protobuf</groupId>
+<artifactId>ast</artifactId>
+<packaging>jar</packaging>
+<version>1.0</version>
+<description></description>
+<url>http://www.unidata.ucar.edu/software/netcdf-java/</url>
+
+<licenses>
+<license>
+<name>Apache License Version 2.0</name>
+<url>http://www.apache.org/licenses/LICENSE-2.0</url>
+</license>
+</licenses>
+
+<!-- ===========================================================
+           Developers and Contributors
+     =========================================================== -->
+<developers>
+<developer>
+<id>dmh</id>
+<name>Dennis Heimbigner</name>
+<email>dmh@unidata.ucar.edu</email>
+<organization>UCAR/UNIDATA</organization>
+<organizationUrl>http://www.unidata.ucar.edu/</organizationUrl>
+</developer>
+</developers>
+
+</project>

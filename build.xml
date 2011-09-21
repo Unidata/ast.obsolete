@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+<project name="ast" default="all" basedir=".">
+
+<!-- Site dependent values;modify as needed; must be absolute path  -->
+<property name="prefix" value="/usr/local"/>
+
+<!-- Compiler Settings -->
+<property name="compile.deprecation"	value="off"/>
+
+<!-- Source directories -->
+<property name="src.dir"	     location="src"/>
+<property name="src.main.dir"	     location="${src.dir}/main"/>
+<property name="src.main.java.dir"   location="${src.main.dir}/java"/>
+<property name="src.main.java.ast.dir" value="${src.main.dir}/java/ast"/>
+<property name="src.main.c.dir" value="${src.main.dir}/c"/>
+<property name="src.main.java.ast.compiler.dir"   location="${src.main.java.ast.dir}/compiler"/>
+
+<!-- Build Directories -->
+<property name="build.dir" value="target"/>
+
+<property name="dest.dir" value="${build.dir}"/>
+
+<property name="build.classes"	location="${build.dir}/classes"/>
+<property name="build.doc"	location="${build.dir}/doc"/>
+<property name="javadocs.dir"    location="${build.doc}/javadocs"/>
+
+<!-- Test Source and baselines -->
+<property name="test.dir"	      location="src/test"/>
+<property name="test.java.dir"        location="${test.dir}/java"/>
+<property name="test.resources.dir"   location="${test.dir}/resources"/>
+
+<!-- Where to put test case output -->
+<property name="results.dir"	location="${build.dir}/results"/>
+
+<!-- jar files -->
+<property name="astjar" value="ast.jar"/>
+<property name="main.class" value="unidata.protobuf.ast.compiler.Main"/>
+
+<property name="distjar" value="unidata.jar"/>
+
+<!-- Misc Properties -->
+<property name="grammar" value="protobuf.y"/>
+<property name="parser" value="ProtobufParser.java"/>
+
+<!-- Path sets -->
+<path id="javasrcdirs">
+    <fileset dir="${src.main.java.ast.dir}/compiler"/>
+    <fileset dir="${src.main.java.ast.dir}/c"/>
+    <fileset dir="${src.main.java.ast.dir}/gnu"/>
+</path>
+
+<path id="javasrc">
+    <fileset dir="${src.main.java.ast.dir}/compiler" includes="*.java"/>
+    <fileset dir="${src.main.java.ast.dir}/c" includes="*.java"/>
+    <fileset dir="${src.main.java.ast.dir}/gnu" includes="*.java"/>
+</path>
+
+<!-- BUILD TASKS  -->
+
+<target name="all" depends="jar"/>
+
+<!-- Target: init - creates the build dirctory tree. -->
+<target name="init" description="Prepare all build directories.">
+    <mkdir dir="${build.dir}"/>
+    <mkdir dir="${build.classes}"/>
+    <mkdir dir="${build.doc}"/>
+    <mkdir dir="${results.dir}"/>
+    <!--tstamp -->
+    <echo level="info" message="time: ${TSTAMP}"/>
+</target>
+
+<target name="clean">
+    <delete includeemptydirs="true" failonerror="false">
+        <filelist files="stamp-h1"/>
+        <fileset dir="${build.dir}"/>
+    </delete>
+</target>
+
+<!-- Compiler compiles the protobuf compiler -->
+<target name="compiler" depends="init">
+    <echo message="${src.main.java.ast.dir}"/>
+    <javac
+	destdir="${build.classes}"
+	classpath="${build.classes}"
+	includeAntRuntime="false"
+	deprecation="${compile.deprecation}"
+	srcdir="${src.main.java.ast.dir}">
+	<include name="**/*.java"/>
+    </javac>
+</target>
+
+<!-- Construct the ast.jar file -->
+<target name="jar" depends="compiler">
+    <jar destfile="${build.dir}/${astjar}" basedir="${build.classes}">
+	<manifest>
+	<attribute name="Manifest-Version" value="1.0"/>
+	<attribute name="Main-class" value="${main.class}"/>
+	</manifest>
+    </jar>
+</target>
+
+<!-- Install the ast.jar file -->
+<target name="install" depends="jar,javadocs">
+    <copy file="${build.dir}/${astjar}" todir="${prefix}"/>
+    <copy todir="${prefix}"><fileset dir="${javadoc.dir}"/></copy>
+</target>
+
+<!-- Build the javadocs -->
+<target name="javadocs" depends="compiler">
+    <javadoc
+             destdir="${javadocs.dir}"
+	     private="true">
+	<fileset dir="${src.main.java.ast.dir}" includes="**/*.java"/>
+    </javadoc>
+</target>
+
+<!-- ||||||||||||||||||||||||| -->
+<!-- This is an unused task that documents how to build
+     the Java parser files from scratch. It should normally only
+     be used by developers. It requires bison-2.5.2 or later,
+     which supports java parsers.
+-->
+<target name="parser" depends="init">
+    <echo message="wd: ${src.main.java.ast.compiler.dir}"/>
+    <exec executable="bison" dir="${src.main.java.ast.compiler.dir}">
+      <arg value="-t"/>
+      <arg value="-L"/>
+      <arg value="Java"/>
+      <arg value="${grammar}"/>
+      <arg value="-o"/>
+      <arg value="${parser}"/>
+  </exec>
+</target>
+
+</project>
