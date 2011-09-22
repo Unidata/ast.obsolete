@@ -10,6 +10,5 @@
 
 #include "ast_runtime.h"
 #include "ast_byteio.h"
-#include "ast_debug.h"
 
 #endif /*AST_H*/

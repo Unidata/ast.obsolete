@@ -21,19 +21,7 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_C_CONST
 
-#AC_MSG_CHECKING([if fsync support is enabled])
-#AC_ARG_ENABLE([fsync],
-#              [AS_HELP_STRING([--disable-fsync],
-#                              [disable fsync support])])
-#test "x$enable_fsync" = xno || enable_fsync=yes
-#AC_MSG_RESULT($enable_fsync)
-#if test "x$enable_fsync" = xyes ; then
-#AC_DEFINE([USE_FSYNC], [1], [if true, include experimental fsync code])
-#fi
-
-#AC_CHECK_HEADERS([stdio.h stdarg.h errno.h stdlib.h string.h stdint.h])
-#AC_TYPE_SIZE_T
-#AC_TYPE_OFF_T
+AC_CHECK_HEADERS([stdio.h stdarg.h errno.h stdlib.h string.h stdint.h])
 AC_CHECK_TYPES([ptrdiff_t, uchar, longlong])
 AC_C_CHAR_UNSIGNED
 AC_C_BIGENDIAN

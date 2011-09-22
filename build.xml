@@ -2,10 +2,10 @@
 <project name="ast" default="all" basedir=".">
 
 <!-- Site dependent values;modify as needed; must be absolute path  -->
-<!--property name="prefix" value="/usr/local"/-->
+<property name="prefix" value="/usr/local"/>
 
 <!-- Watch out if this is under cygwin -->
-<property name="prefix" value="c:/cygwin/usr/local"/>
+<!--property name="prefix" value="c:/cygwin/usr/local"/-->
 
 <!-- Compiler Settings -->
 <property name="compile.deprecation"	value="off"/>

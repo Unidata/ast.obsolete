@@ -18,9 +18,6 @@ MAINTAINERCLEANFILES =
 #pkgconfigdir=$(libdir)/pkgconfig
 #pkgconfig_DATA = ast.pc
 
-# What needs to go in the binary dist?
-#BINFILES = include/netcdf.h share/man/man3/netcdf.3 lib/libnetcdf.a
-
 # Build the runtime library
 libast_la_SOURCES = \
 ast_byteio.c \
@@ -39,5 +36,8 @@ ast.h
 
 lib_LTLIBRARIES = libast.la
 
-#noinst_HEADERS = ast_curl.h ast_internal.h ast_util.h
-include_HEADERS = ast.h ast_byteio.h ast_debug.h ast_runtime.h
+# Install only ast.h ast_runtime.h ast_byteio.h
+include_HEADERS = ast.h ast_runtime.h ast_byteio.h 
+noinst_HEADERS = ast_curl.h ast_debug.h ast_internal.h ast_util.h
+
+

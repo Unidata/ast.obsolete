@@ -14,7 +14,6 @@
 #endif
 
 #include "ast_runtime.h"
-#include "ast_internal.h"
 #include "ast_byteio.h"
 #include "ast_debug.h"
 #include "ast_util.h"

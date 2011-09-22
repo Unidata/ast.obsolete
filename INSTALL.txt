@@ -9,9 +9,10 @@ Install
 -------
 1. Edit build.xml and modify the "prefix" property to
    define the location for the installation of ast.jar. The default
-   is the local directory "/usr/local".
+   is the local directory "/usr/local". Alternately, specify
+   the prefix on the command line: "ant -Dprefix='<prefix>'".
 
-2. Invoke "ant install" to build the Java-based compiler
+2. Invoke "ant -Dprefix='<prefix>' install" to build the Java-based compiler
    and install in ${prefix}/lib/ast.jar.
 
 3. Invoke ./configure -prefix=<installdirectory>,

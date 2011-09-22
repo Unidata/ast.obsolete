@@ -16,8 +16,8 @@ AM_LDFLAGS =
 AM_CFLAGS =
 
 # Link to our assembled library.
-AM_CFLAGS += -I${top_builddir}/src/main/c
-AM_LDFLAGS += -L${top_builddir}/src/main/c -last
+AM_CFLAGS += -I${top_builddir}/src/main/c/runtime
+AM_LDFLAGS += -L${top_builddir}/src/main/c/runtime -last
 
 TESTPROTO = Primtests.proto Bytetests.proto Msgtests.proto Enumtests.proto
 
