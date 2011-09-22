@@ -13,7 +13,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 astjar = ast.jar
 
-SUBDIRS=src/main/c src/test/c src/main/java/ast doc
+SUBDIRS=src/main/c/runtime src/test/c doc
 
 # These files get added to the distribution.
 EXTRA_DIST =
@@ -22,5 +22,5 @@ DISTCLEANFILES = Makefile
 # List of files to remove for a maintainer-clean
 MAINTAINERCLEANFILES =
 
-EXTRA_DIST += build.xml CHANGES.txt LICENSE.txt NOTICE.txt README.txt 
+EXTRA_DIST += build.xml CHANGES.txt LICENSE.txt README.txt 
 

@@ -2,7 +2,10 @@
 <project name="ast" default="all" basedir=".">
 
 <!-- Site dependent values;modify as needed; must be absolute path  -->
-<property name="prefix" value="/usr/local"/>
+<!--property name="prefix" value="/usr/local"/-->
+
+<!-- Watch out if this is under cygwin -->
+<property name="prefix" value="c:/cygwin/usr/local"/>
 
 <!-- Compiler Settings -->
 <property name="compile.deprecation"	value="off"/>
@@ -12,7 +15,6 @@
 <property name="src.main.dir"	     location="${src.dir}/main"/>
 <property name="src.main.java.dir"   location="${src.main.dir}/java"/>
 <property name="src.main.java.ast.dir" value="${src.main.dir}/java/ast"/>
-<property name="src.main.c.dir" value="${src.main.dir}/c"/>
 <property name="src.main.java.ast.compiler.dir"   location="${src.main.java.ast.dir}/compiler"/>
 
 <!-- Build Directories -->
@@ -47,12 +49,16 @@
     <fileset dir="${src.main.java.ast.dir}/compiler"/>
     <fileset dir="${src.main.java.ast.dir}/c"/>
     <fileset dir="${src.main.java.ast.dir}/gnu"/>
+    <fileset dir="${src.main.java.ast.dir}/java"/>
+    <fileset dir="${src.main.java.dir}/runtime"/>
 </path>
 
 <path id="javasrc">
     <fileset dir="${src.main.java.ast.dir}/compiler" includes="*.java"/>
     <fileset dir="${src.main.java.ast.dir}/c" includes="*.java"/>
     <fileset dir="${src.main.java.ast.dir}/gnu" includes="*.java"/>
+    <fileset dir="${src.main.java.ast.dir}/java"/>
+    <fileset dir="${src.main.java.dir}/runtime"/>
 </path>
 
 <!-- BUILD TASKS  -->
@@ -64,6 +70,7 @@
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${build.classes}"/>
     <mkdir dir="${build.doc}"/>
+    <mkdir dir="${javadoc.dir}"/>
     <mkdir dir="${results.dir}"/>
     <!--tstamp -->
     <echo level="info" message="time: ${TSTAMP}"/>
@@ -101,7 +108,7 @@
 
 <!-- Install the ast.jar file -->
 <target name="install" depends="jar,javadocs">
-    <copy file="${build.dir}/${astjar}" todir="${prefix}"/>
+    <copy file="${build.dir}/${astjar}" todir="${prefix}/lib"/>
     <copy todir="${prefix}"><fileset dir="${javadoc.dir}"/></copy>
 </target>
 

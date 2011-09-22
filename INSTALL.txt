@@ -12,7 +12,7 @@ Install
    is the local directory "/usr/local".
 
 2. Invoke "ant install" to build the Java-based compiler
-   and install in ${prefix}/ast.jar.
+   and install in ${prefix}/lib/ast.jar.
 
 3. Invoke ./configure -prefix=<installdirectory>,
    where <installdirectory> is the same as the prefix specified
@@ -26,8 +26,10 @@ Using the compiler
 ------------------
 
 1. Invoke the compiler using a command similar to this:
-       java -jar ${prefix}/ast.jar XXX.proto
+       java -jar ${prefix}/lib/ast.jar XXX.proto
    This compiles XXX.proto and produces XXX.{c,h}.
+   The ${prefix} value is the typically the same
+   as the prefix value used above.
 
 2. Invoke (e.g.) gcc to compile and load a test program.
 	gcc -o test.exe testast.c XXX.c -L${prefix}/lib -last

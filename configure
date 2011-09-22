@@ -12781,7 +12781,7 @@ _ACEOF
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: generating header files and makefiles" >&5
 $as_echo "$as_me: generating header files and makefiles" >&6;}
-ac_config_files="$ac_config_files Makefile src/main/c/Makefile src/main/java/ast/Makefile src/test/c/Makefile doc/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile src/main/c/runtime/Makefile src/test/c/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -13798,10 +13798,9 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "src/main/c/Makefile") CONFIG_FILES="$CONFIG_FILES src/main/c/Makefile" ;;
-    "src/main/java/ast/Makefile") CONFIG_FILES="$CONFIG_FILES src/main/java/ast/Makefile" ;;
-    "src/test/c/Makefile") CONFIG_FILES="$CONFIG_FILES src/test/c/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
+    "src/main/c/runtime/Makefile") CONFIG_FILES="$CONFIG_FILES src/main/c/runtime/Makefile" ;;
+    "src/test/c/Makefile") CONFIG_FILES="$CONFIG_FILES src/test/c/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5 ;;
   esac

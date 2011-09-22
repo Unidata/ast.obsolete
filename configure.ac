@@ -48,10 +48,9 @@ AC_CHECK_SIZEOF(ptrdiff_t)
 
 AC_MSG_NOTICE([generating header files and makefiles])
 AC_CONFIG_FILES([Makefile
-		 src/main/c/Makefile
-		 src/main/java/ast/Makefile
-		 src/test/c/Makefile
 		 doc/Makefile
+		 src/main/c/runtime/Makefile
+		 src/test/c/Makefile
 		])
 AC_OUTPUT()
 
