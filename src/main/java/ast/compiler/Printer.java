@@ -39,7 +39,7 @@ import java.util.*;
  * Adopt the protobuf printer idea of allowing embedded $...$ names
  */
 
-class Printer
+public class Printer
 {
     String filename = null;
     Writer writer = null;

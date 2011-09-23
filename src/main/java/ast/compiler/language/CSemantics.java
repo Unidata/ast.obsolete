@@ -32,6 +32,8 @@
 
 package unidata.protobuf.ast.compiler.language;
 
+import unidata.protobuf.ast.compiler.*;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.io.*;

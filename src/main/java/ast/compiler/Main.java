@@ -22,7 +22,7 @@ public class Main
     };
 
     static final String DFALTLANGUAGE = "c";
-    static final String DFALTPACKAGE = "unidata.protobuf.ast.compiler";
+    static final String DFALTPACKAGE = "unidata.protobuf.ast.compiler.language";
 
     static List<String> includePaths = new ArrayList<String>();
     static List<String> defines = new ArrayList<String>();
@@ -37,6 +37,11 @@ public class Main
 
     static boolean debug = false;
 
+    // Getters
+    static public boolean getDebug() {return debug;}
+    static public boolean getOptionTrace() {return optionTrace;}
+
+    //////////////////////////////////////////////////
     static public void main(String[] argv) throws Exception
     {
 	int c;

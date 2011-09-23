@@ -74,6 +74,7 @@ then its declarations are generated also.
 
 package unidata.protobuf.ast.compiler.language;
 
+import unidata.protobuf.ast.compiler.*;
 import gnu.getopt.Getopt;
 
 import java.util.*;
@@ -695,7 +696,7 @@ generate_readfunction(AST.Message msg, Printer printer)
     printer.println("ast_err status = AST_NOERR;");
     printer.println("uint32_t wiretype, fieldno;");
     printer.printf("%s* %s;\n",ctypefor(msg),cmsgvar(msg));
-    if(Main.optionTrace) {
+    if(Main.getOptionTrace()) {
 	printer.println("unsigned long pos;");
     }
 
@@ -708,13 +709,13 @@ generate_readfunction(AST.Message msg, Printer printer)
     printer.blankline();
     printer.println("while(status == AST_NOERR) {");
     printer.indent();
-    if(Main.optionTrace) {
+    if(Main.getOptionTrace()) {
 	printer.println("pos = (unsigned long)xpos(rt);");
     }
     printer.println("status = ast_read_tag(rt,&wiretype,&fieldno);");
     printer.println("if(status == AST_EOF) {status = AST_NOERR; break;}");
     printer.println("if(status != AST_NOERR) break;");
-    if(Main.optionTrace) {
+    if(Main.getOptionTrace()) {
         printer.println("{");
 	printer.print("fprintf(stderr,");
 	printer.pushIndent(0);
@@ -1360,7 +1361,7 @@ ctypesort(AST.Type asttype)
 void
 generate_check(Printer printer) throws IOException
 {
-    if(Main.debug)
+    if(Main.getDebug())
         printer.println("if(status != AST_NOERR) {ACATCH(status); goto done;}");
     else
         printer.println("if(status != AST_NOERR) {ACATCH(status); goto done;}");
@@ -1369,7 +1370,7 @@ generate_check(Printer printer) throws IOException
 void
 generate_return(Printer printer) throws IOException
 {
-    if(Main.debug)
+    if(Main.getDebug())
         printer.println("return ACATCH(status);");
     else
         printer.println("return status;");

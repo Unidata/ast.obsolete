@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../src">
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/java/ast/compiler" isTestSource="false" packagePrefix="unidata.protobuf.ast.compiler" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/java/ast/runtime" isTestSource="false" packagePrefix="unidata.protobuf.ast.runtime" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/test/java/ast" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/java/gnu" isTestSource="false" packagePrefix="gnu.getopt" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/java/ast/compiler/Lc" isTestSource="false" packagePrefix="unidata.protobuf.ast.compiler" />
+      <sourceFolder url="file://$MODULE_DIR$/../src/main/java/ast/compiler/Ljava" isTestSource="false" packagePrefix="unidata.protobuf.ast.compiler" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
+

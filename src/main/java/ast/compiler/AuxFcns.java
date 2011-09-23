@@ -38,7 +38,7 @@ import java.io.*;
 public class AuxFcns
 {
 
-enum EscapeMode {EMODE_C};
+public enum EscapeMode {EMODE_C, EMODE_JAVA};
 
 static int uid = 0; // for generating unique ids.
 
@@ -260,7 +260,7 @@ collectpath(AST ast, List<AST> path, boolean thrupackage)
 // Printable chars that must be escaped
 
 // Add in escapes to a string
-static String
+static public String
 escapify(String s, char quotemark, EscapeMode emode)
 {
     StringBuilder es = new StringBuilder();
@@ -280,13 +280,28 @@ escapify(String s, char quotemark, EscapeMode emode)
 	    } else
 		es.append(c);
 	    break;
+
+        case EMODE_JAVA:
+	    if(c == '\n') es.append("\\n");
+	    else if(c == '\r') es.append("\\r");
+	    else if(c == '\t') es.append("\\t");
+	    else if(c < ' ' || c == '\177') {
+		// unicode encoding
+		String ucode = Integer.toHexString((int)c);
+		while(ucode.length() < 4) ucode = '0' + ucode;
+		es.append("\\u"+ucode);
+	    } else if(c == quotemark) {
+		es.append("\\\"");
+	    } else
+		es.append(c);
+	    break;
 	}
     }    
     return es.toString();
 }
 
 
-static String
+static public String
 getBaseName(String base)
 {
     // strip off the path part
@@ -298,7 +313,7 @@ getBaseName(String base)
     return base;
 }
 
-static String
+static public String
 getFilePrefix(String path)
 {
     // strip off the path part and return it
@@ -329,7 +344,7 @@ sortFieldIds(List<AST.Field> fields)
     return sorted;
 }
 
-static boolean
+static public boolean
 getbooleanvalue(String optionvalue)
 {
     boolean boolvalue = false;
@@ -347,7 +362,7 @@ getbooleanvalue(String optionvalue)
 }
 
 
-static AST.OptionDef
+static public AST.OptionDef
 getOptionDef(AST node, String key)
 {
     AST.Root root = node.getRoot();

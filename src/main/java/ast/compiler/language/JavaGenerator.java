@@ -71,6 +71,7 @@ must be separately generated and compiled.
 
 package unidata.protobuf.ast.compiler.language;
 
+import unidata.protobuf.ast.compiler.*;
 import gnu.getopt.Getopt;
 
 import java.util.*;
@@ -473,12 +474,17 @@ generate_messageclass(AST.Message msg, Printer printer) throws Exception
     // Generate the fields
     if(msg.getFields().size() > 0) {
         for(AST.Field field: msg.getFields()) {
-            if(isRequired(field) || isOptional(field)) {
-                printer.printf("%s %s;\n",
+            if(isRequired(field)) {
+                printer.printf("%s %s = %s;\n",
+                                jtypefor(field.getType()),
+                                jfieldvar(field),
+                                defaultfor(field));
+            } else if(isOptional(field)) {
+                printer.printf("%s[] %s = null;\n",
                                 jtypefor(field.getType()),
                                 jfieldvar(field));
             } else { // isRepeated(field)
-                printer.printf("%s %s;\n",
+                printer.printf("%s[] %s = null;\n",
                         jtypefor(field.getType()),
                         jfieldvar(field));
             }
@@ -487,13 +493,11 @@ generate_messageclass(AST.Message msg, Printer printer) throws Exception
     }
 
     // Generate the class methods
-    generate_constructor(msg,printer);
+    generate_constructors(msg,printer);
     printer.blankline();
     generate_writefunction(msg,printer);
     printer.blankline();
     generate_readfunction(msg,printer);
-    printer.blankline();
-    generate_reclaimfunction(msg,printer);
     printer.blankline();
     generate_sizefunction(msg,printer);
 
@@ -503,14 +507,43 @@ generate_messageclass(AST.Message msg, Printer printer) throws Exception
 }
 
 void
-generate_constructor(AST.Message msg, Printer printer)
+generate_constructors(AST.Message msg, Printer printer)
     throws Exception
 {
-    printer.printf("public %s(Ast_runtime rt)\n",
-		    jtypefor(msg), jmsgvar(msg));
+    // First, generate the simple constructor
+    printer.printf("public %s(Ast_runtime rt)\n",jtypefor(msg));
     printer.println(LBRACE);
     printer.indent();
     printer.println("super(rt);");
+    printer.outdent();
+    printer.println(RBRACE);
+
+    // Generate the big constructor
+    String s = String.format("public %s(",jtypefor(msg));
+    printer.println(s+"Ast_runtime rt,");
+    // add field decls
+    int dent = printer.getIndent();
+    printer.indentTo(s.length());
+    int len = msg.getFields().size();
+    for(int i=0;i<len;i++) {
+        AST.Field field =  msg.getFields().get(i);
+        printer.printf("%s%s %s%s\n",
+			    jtypefor(field.getType()),
+			    (isRequired(field)?"":"[]"),
+			    jfieldvar(field),
+			    (i==len-1?"":","));
+    }
+    printer.println(")");
+    printer.indentTo(dent);
+    printer.println(LBRACE);
+    printer.indent();
+    printer.println("super(rt);");
+    // assign args to fields
+    for(AST.Field field: msg.getFields()) {
+        printer.printf("this.%s = %s\n",
+			    jfieldvar(field),
+			    jfieldvar(field));
+    }
     printer.outdent();
     printer.println(RBRACE);
 }
@@ -519,7 +552,8 @@ void
 generate_writefunction(AST.Message msg, Printer printer)
     throws Exception
 {
-    printer.printf("public void write()\n");
+    printer.printf("public void %s\n",jtypefor(msg));
+    printer.println("write()");
     printer.indent();
     printer.println("throws Ast_Exception");
     printer.outdent();
@@ -528,7 +562,6 @@ generate_writefunction(AST.Message msg, Printer printer)
 
     // Generate the field serializations
     for(AST.Field field: msg.getFields()) {
-	printer.indent();
 	if(!isPrimitive(field) && !isEnum(field))
 		printer.println("long size;");
 	if(isRequired(field)) {
@@ -554,7 +587,7 @@ generate_writefunction(AST.Message msg, Printer printer)
 			    jmsgvar(msg),jfieldvar(field));
 	    printer.indent();
 	    if(isPrimitive(field) || isEnum(field)) {
-		printer.printf("status = write_primitive(%s,%d,%s);\n",
+		printer.printf("write_primitive(%s,%d,%s);\n",
 			       jtypesort(field.getType()), field.getId(),
 			       jfieldvar(field));
 	    } else if(isMessage(field)) {
@@ -575,7 +608,7 @@ generate_writefunction(AST.Message msg, Printer printer)
 	    if(isPrimitive(field) || isEnum(field)) {
                 /* Write the data */
 		if(field.isPacked()) {
-                    printer.printf("write_primitive_packed(%s,%d,%s);\n",
+                    printer.printf("write_primitive_packed(%s%d,%s);\n",
                                    jtypesort(field.getType()),
                                    field.getId(),
                                    jfieldvar(field));
@@ -607,15 +640,13 @@ generate_writefunction(AST.Message msg, Printer printer)
                 printer.println(RBRACE);
 	    } else throw new Exception("unknown field type");
 	}
-	printer.outdent();
-	printer.println(RBRACE);
     }
     printer.outdent();
     printer.blankline();
     if(msg.getFields().size() > 0)
         printer.println("done:");
     printer.indent();
-    printer.println("return;");
+    printer.println("return this;");
     printer.outdent();
     printer.blankline();
     printer.printf(RBRACE+" /*%s_write*/\n",msg.getName());
@@ -625,41 +656,36 @@ void
 generate_readfunction(AST.Message msg, Printer printer)
     throws Exception
 {
-    printer.printf("public %s\nread()\n",jtypefor(msg));
+    printer.printf("public void %s\n",jtypefor(msg));
+    printer.println("read()");
     printer.indent();
     printer.println("throws Ast_Exception");
     printer.outdent();
     printer.println(LBRACE);
     printer.indent();
-    printer.println("long[] wiretype = new long[1];\n");
-    printer.println("long[] fieldno = new long[1];\n");
-    printer.printf("%s %s = null;\n",jtypefor(msg),jmsgvar(msg));
-    if(Main.optionTrace) {
+    // wiretype and fieldno are fake call by ref.
+    printer.println("long[] wiretype = new long[1];");
+    printer.println("long[] fieldno = new long[1];");
+    if(Main.getOptionTrace()) {
 	printer.println("long pos;");
     }
-    // Create the target instance
-    printer.blankline();
-    printer.printf("%s = new %s(this.rt);\n",
-		    jmsgvar(msg),jtypefor(msg));
-    printer.printf("if(%s == null) throw new Ast_exception(AST_ENOMEM);\n",
-                    jmsgvar(msg));
     printer.blankline();
     printer.println("for(;;) {");
     printer.indent();
-    if(Main.optionTrace) {
+    if(Main.getOptionTrace()) {
 	printer.println("pos = (long)xpos(this.rt);");
     }
     printer.println("if(!read_tag(wiretype,fieldno)) break;");
-    if(Main.optionTrace) {
+    if(Main.getOptionTrace()) {
 	printer.print("System.err.printf(");
 	printer.printf("\"|%s|",msg.getName());
         printer.printf(": before=%%ld fieldno=%%ld wiretype=%%ld after=%%ld\\n\",");
 	printer.println("pos,fieldno,wiretype,xpos(rt));");    
     }
     // Generate the field de-serializations
-    printer.println("switch (fieldno) {");
+    printer.println("switch (fieldno[0]) {");
     for(AST.Field field: msg.getFields()) {
-	printer.printf("case %d: {\n",field.getId());
+	printer.printf("case %d: { // %s\n",field.getId(),jfieldvar(field));
 	printer.indent();
 	if(isPrimitive(field)) {
 	    generate_read_primitive(msg,field,field.isPacked(),printer);
@@ -673,7 +699,7 @@ generate_readfunction(AST.Message msg, Printer printer)
 	    if(isRepeated(field))
 	        printer.printf("%s tmp;\n",jtypefor(field.getType()));
 	    // Verify that the wiretype == Ast_counted
-	    printer.println("if(wiretype != Ast_counted)");
+	    printer.println("if(wiretype[0] != Ast_counted)");
 	    printer.indent();
 	    printer.println("throw new Ast_exception(AST_EFAIL);");
 	    printer.outdent();
@@ -686,7 +712,7 @@ generate_readfunction(AST.Message msg, Printer printer)
     // add default
     printer.println("default:");
     printer.indent();
-    printer.println("skip_field(wiretype,fieldno);");
+    printer.println("skip_field(wiretype[0],fieldno[0]);");
     printer.outdent();
     printer.println("} /*switch*/"); // switch
     printer.outdent();
@@ -699,9 +725,8 @@ generate_readfunction(AST.Message msg, Printer printer)
 	}
     }
     // return result
-    printer.printf("return %s;\n",jmsgvar(msg));
-    printer.outdent();
-    printer.printf("} /*%s_read*/\n",msg.getName());
+    printer.println("return this;");
+    printer.outdent();    printer.printf("} /*%s_read*/\n",msg.getName());
 }
 
 void
@@ -731,27 +756,15 @@ generate_read_primitive(AST.Message msg, AST.Field field, boolean ispacked, Prin
         case STRING: case BYTES:
 	default: break;
 	}
-	printer.printf("%s = read_primitive(%s,%d);\n",
+	printer.printf("%s = read_primitive_%s(%d);\n",
 			       jfieldvar(field),
 			       jtypesort(field.getType()),
 			       field.getId());
 	break;
 
     case OPTIONAL:
-        printer.printf("%s = 1;\n",
-                        jfieldvar(field));
-        switch (psort) {
-        case STRING:
-            printer.printf("%s = null;\n", jfieldvar(field));
-            break;
-        case BYTES:
-            printer.printf("%s = null;\n",jfieldvar(field));
-            break;
-        default:
-            printer.printf("%s = 0;\n",jfieldvar(field));
-            break;
-        }
-        printer.printf("%s = read_primitive(%s,%d);\n",
+        printer.printf("%s = null;\n", jfieldvar(field));
+        printer.printf("%s = read_primitive_%s(%d);\n",
                            jfieldvar(field),
                            jtypesort(field.getType()),
 			   field.getId());
@@ -759,16 +772,19 @@ generate_read_primitive(AST.Message msg, AST.Field field, boolean ispacked, Prin
 
     case REPEATED:
 	if(ispacked) {
-            printer.printf("%s = read_primitive_packed(%s,%d);\n",
+            printer.printf("%s = read_primitive_packed_%s(%d);\n",
                                 jfieldvar(field),
                                 jtypesort(field.getType()),
 				field.getId());
 	} else {
             printer.printf("%s tmp;\n",jtypefor(field.getType()));
-            printer.printf("tmp = read_primitive(%s,%d);\n",
-                                jtypesort(field.getType()),field.getId());
-	    printer.printf("tmp = repeat_append(%s,tmp);\n",
-                            jtypesort(field.getType()));
+            printer.printf("tmp = read_primitive_%s(%d);\n",
+                                jtypesort(field.getType()),
+			        field.getId());
+	    printer.printf("%s = repeat_append_%s(%s,tmp);\n",
+			    jfieldvar(field),
+                            jtypesort(field.getType()),
+			    jfieldvar(field));
 	}
         break;
     }
@@ -804,9 +820,10 @@ generate_read_enum(AST.Message msg, AST.Field field, boolean ispacked, Printer p
             printer.printf("%s tmp = null;\n",jtypefor(field.getType()));
             printer.printf("tmp = read_primitive(%s,%d);\n",
                                 jtypesort(field.getType()),field.getId());
-	    printer.printf("tmp = repeat_append(%s,%s.%s);\n",
+	    printer.printf("%s = repeat_append(%s,%s,tmp);\n",
+                            jfieldvar(field),
                             jtypesort(field.getType()),
-                            jmsgvar(msg),jfieldvar(field));
+                            jfieldvar(field));
 	}
         break;
     }
@@ -821,23 +838,17 @@ generate_read_message(AST.Message msg, AST.Field field, Printer printer)
 
     switch (field.getCardinality()) {
     case REQUIRED:
-        printer.printf("%s = %s.read();\n",
+    case OPTIONAL:
+        printer.printf("%s = new %s(rt).read();\n",
 			    jfieldvar(field),
 			    jclassname(field.getType()));
 	break;
 
-    case OPTIONAL:
-	printer.printf("%s = null;\n",
-			    jfieldvar(field));
-	printer.printf("%s = %s_read(&%s.%s.value);\n",
-			    jfieldvar(field),
-			    jclassname(field.getType()));
-        break;
-
     case REPEATED:
-	printer.printf("tmp = %s.read();\n",jtypefor(field.getType()));
-        printer.printf("tmp = repeat_append(%s,%s,tmp);\n",
-				jtypesort(field.getType()),
+	printer.printf("tmp = new %s(rt).read();\n",
+			jtypefor(field.getType()));
+        printer.printf("%s = repeat_append(%s,tmp);\n",
+				jfieldvar(field),
 				jfieldvar(field));
     }
 
@@ -906,36 +917,12 @@ generate_read_default_primitive(AST.Message msg, AST.Field field, Printer printe
     printer.println("}");
 }
 
-void generate_reclaimfunction(AST.Message msg, Printer printer)
-    throws Exception
-{
-    printer.printf("public void\nreclaim()\n");
-    printer.println(LBRACE);
-    printer.indent();
-
-    // Generate the field reclaims
-    for(AST.Field field: msg.getFields()) {
-        AST.Sort sort = field.getType().getSort();
-        AST.PrimitiveSort psort = getPrimitiveSort(field);
-	printer.println(LBRACE);
-	printer.indent();
-
-        if(sort == AST.Sort.MESSAGE) {
-	    // reclaim the submessage
-	    printer.printf("%s.reclaim();\n",
-			       jfieldvar(field));
-	}	
-        printer.printf("%s = null;",jfieldvar(field));
-    }
-    printer.outdent();
-    printer.printf("} /*%s_reclaim*/\n",msg.getName());
-}
-
 
 void generate_sizefunction(AST.Message msg, Printer printer)
     throws Exception
 {
-    printer.printf("long\nget_size()\n");
+    printer.println("public long");
+    printer.println("get_size()");
     printer.println("{");
     printer.indent();
     printer.println("long totalsize = 0;");
@@ -945,6 +932,7 @@ void generate_sizefunction(AST.Message msg, Printer printer)
 
     // sum the field sizes; make sure to include the tag if not packed
     for(AST.Field field: msg.getFields()) {
+        printer.println("fieldsize = 0;");
 	switch (field.getType().getSort()) {
 	case MESSAGE: break;
 	case ENUM: break;
@@ -952,16 +940,13 @@ void generate_sizefunction(AST.Message msg, Printer printer)
 	default: continue;
 	}
 
-	printer.println(LBRACE);
-	printer.indent();
-
 	if(isRequired(field)) {
 	    if(isPrimitive(field) || isEnum(field)) {
 		// Add in the prefix tag size
 		printer.printf("fieldsize += get_tagsize(%s,%d);\n",
 			(field.isPacked()?jtypesort(field.getType()):"Ast_counted"),
 			field.getId());
-		printer.printf("fieldsize += get_size(%s,%s);\n",
+		printer.printf("fieldsize += get_size(Ast_%s,%s);\n",
 			       jtypesort(field.getType()),
 			       jfieldvar(field));
 	    } else if(isMessage(field)) {
@@ -983,7 +968,7 @@ void generate_sizefunction(AST.Message msg, Printer printer)
 		printer.printf("fieldsize += get_tagsize(%s,%d);\n",
 			(field.isPacked()?jtypesort(field.getType()):"Ast_counted"),
 			field.getId());
-		printer.printf("fieldsize += get_size(%s,%s);\n",
+		printer.printf("fieldsize += get_size(Ast_%s,%s);\n",
 			       jtypesort(field.getType()),
 			       jfieldvar(field));
 	    } else if(isMessage(field)) {
@@ -1000,7 +985,7 @@ void generate_sizefunction(AST.Message msg, Printer printer)
 	    printer.outdent();
 	    printer.printf("}\n");
 	} else { // field.getCardinality() == AST.Cardinality.REPEATED
-	    printer.printf("for(int i=0;i<%s.length;i++) {\n",
+	    printer.printf("for(int i=0;i<%s.length;i++) "+LBRACE+"\n",
 			    jfieldvar(field));
 	    printer.indent();
 	    if(isPrimitive(field) || isEnum(field)) {
@@ -1008,7 +993,7 @@ void generate_sizefunction(AST.Message msg, Printer printer)
 		printer.printf("fieldsize += get_tagsize(%s,%d);\n",
 			(field.isPacked()?jtypesort(field.getType()):"Ast_counted"),
 			field.getId());
-		printer.printf("fieldsize += get_size(%s,%s[i]);\n",
+		printer.printf("fieldsize += get_size(Ast_%s,%s[i]);\n",
 			       jtypesort(field.getType()),
 			       jfieldvar(field));
 	    } else if(isMessage(field)) {
@@ -1026,6 +1011,7 @@ void generate_sizefunction(AST.Message msg, Printer printer)
 	    printer.println(RBRACE);
 	}
         printer.println("totalsize += fieldsize;");
+        printer.blankline();
     }
 
     printer.println("return totalsize;");
@@ -1088,31 +1074,31 @@ jtypefor(AST.Type asttype)
 	switch (((AST.PrimitiveType)asttype).getPrimitiveSort()) {
 	case SINT32:
 	case SFIXED32:
-	case INT32:   typ = "Integer"; break;
+	case INT32:   typ = "int"; break;
 
 	case FIXED32:
-	case UINT32:   typ = "Long"; break;
+	case UINT32:   typ = "long"; break;
 
 	case SINT64:
 	case SFIXED64:
-	case INT64:   typ = "Long"; break;
+	case INT64:   typ = "long"; break;
 
 	case FIXED64:
-	case UINT64:   typ = "Long"; break;
+	case UINT64:   typ = "long"; break;
 
-	case FLOAT:   typ = "Float"; break;
-	case DOUBLE:  typ = "Double"; break;
+	case FLOAT:   typ = "float"; break;
+	case DOUBLE:  typ = "double"; break;
 
-	case BOOL:    typ = "Boolean"; break;
+	case BOOL:    typ = "boolean"; break;
 	case STRING:  typ = "String"; break;
 
-	case BYTES:   typ = "Byte[]"; break;
-	// No default because we want the compiler to complain if any new
-	// types are added.
+	case BYTES:   typ = "byte[]"; break;
+
 	}
-    } else if(asttype.getSort() == AST.Sort.ENUM
-	      || asttype.getSort() == AST.Sort.MESSAGE) {
+    } else if(asttype.getSort() == AST.Sort.ENUM) {
 	typ = asttype.getName();
+    } else if(asttype.getSort() == AST.Sort.MESSAGE) {
+        typ = asttype.getName();
     } else { // Illegal
 	System.err.println("Cannot translate type to Java Type: "+asttype.getName());
 
@@ -1124,20 +1110,19 @@ String
 defaultfor(AST.Field field)
 {
     AST.Type fieldtype = field.getType();
-    if(isRepeated(field)) {
-	// repeated default is always a list of the type of the field
-	return String.format("new ArrayList<%s>()",jtypefor(fieldtype));
+    if(isRepeated(field) | isOptional(field)) {
+	return "null";
     } else {
 	// See if the field has a defined default
 	Object value = field.optionLookup("DEFAULT");
-	if(value == null) return null;
+	if(value != null) return value.toString();
 	if(fieldtype.getSort() == AST.Sort.PRIMITIVETYPE) {
-	    return (String)value;
+	    return "0";
 	} else if(fieldtype.getSort() == AST.Sort.ENUM) {
-	    return (String)value;
+	    return "null";
 	} else if(fieldtype.getSort() == AST.Sort.MESSAGE) {
-	    return String.format("%s.getDefaultInstance()",
-				    fieldtype.getName());
+	    //return String.format("%s.getDefaultInstance()",jtypefor(fieldtype));
+	    return "null";
 	}
     }
     return null;
@@ -1150,28 +1135,28 @@ jtypesort(AST.Type asttype)
     String sort = null;
     if(asttype.getSort() == AST.Sort.PRIMITIVETYPE) {
 	switch (((AST.PrimitiveType)asttype).getPrimitiveSort()) {
-	case SINT32: return "Ast_sint32";
-	case SFIXED32: return "Ast_sfixed32";
-	case UINT32: return "Ast_uint32";
-	case FIXED32: return "Ast_fixed32";
-	case INT32: return "Ast_int32";
-	case SINT64: return "Ast_sint64";
-	case SFIXED64: return "Ast_sfixed64";
-	case UINT64: return "Ast_uint64";
-	case FIXED64: return "Ast_fixed64";
-	case INT64: return "Ast_int64";
-	case FLOAT: return "Ast_float";
-	case DOUBLE: return "Ast_double";
-	case BOOL: return "Ast_bool";
-	case STRING: return "Ast_string";
-	case BYTES: return "Ast_bytes";
+	case SINT32: return "sint32";
+	case SFIXED32: return "sfixed32";
+	case UINT32: return "uint32";
+	case FIXED32: return "fixed32";
+	case INT32: return "int32";
+	case SINT64: return "sint64";
+	case SFIXED64: return "sfixed64";
+	case UINT64: return "uint64";
+	case FIXED64: return "fixed64";
+	case INT64: return "int64";
+	case FLOAT: return "float";
+	case DOUBLE: return "double";
+	case BOOL: return "bool";
+	case STRING: return "string";
+	case BYTES: return "bytes";
 	// No default because we want the compiler to complain if any new
 	// types are added.
 	}
     } else if(asttype.getSort() == AST.Sort.ENUM) {
-        return "Ast_enum";
+        return "enum";
     } else if(asttype.getSort() == AST.Sort.MESSAGE) {
-        return "Ast_message";
+        return "message";
     } else {
 	System.err.println("Cannot translate type to Java sort:" + asttype.getSort().toString());
     }
