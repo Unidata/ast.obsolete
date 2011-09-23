@@ -30,7 +30,7 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler;
+package unidata.protobuf.ast.compiler.language;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -41,10 +41,10 @@ import static unidata.protobuf.ast.compiler.Debug.*;
 
 /**
  * Implement any needed semantic tests
- *for generating Java code.
+ *for generating C code.
  */
 
-public class JavaSemantics extends Semantics
+public class CSemantics extends Semantics
 {
 
 //////////////////////////////////////////////////
@@ -55,7 +55,7 @@ String[] argv = null;
 
 //////////////////////////////////////////////////
 // Constructor
-public JavaSemantics() {}
+public CSemantics() {}
 
 //////////////////////////////////////////////////
 
@@ -72,12 +72,9 @@ initialize(AST.Root root, String[] argv, ASTFactory factory)
 
     // Add the predefined optiondefs; user defined options
     // will have already been added by parser
-    odefs.add(new OptionDef("java_file", "string"));
-    odefs.add(new OptionDef("package", "string"));
-    odefs.add(new OptionDef("imports", "string"));
-    odefs.add(new OptionDef("imports", "string"));
-    odefs.add(new OptionDef("extends", "string"));
-    odefs.add(new OptionDef("implements", "string"));
+    odefs.add(new OptionDef("c_file", "string"));
+    odefs.add(new OptionDef("include", "string"));
+    odefs.add(new OptionDef("config_h", "bool"));
 
     return true;
 }
@@ -87,9 +84,38 @@ initialize(AST.Root root, String[] argv, ASTFactory factory)
 public boolean
 process(AST.Root root)
 {
-    boolean status = true;
-    status = fixstringoptions(root);
-    return status;
+    if(!checkdupctypes(root)) return false;
+    if(!fixstringoptions(root)) return false;
+    return true;
+}
+
+boolean
+checkdupctypes(AST.Root root)
+{
+    // Since the C code generates all message types as top-level
+    // structs, we must check to see that we do not have any
+    // duplicates; similarly for enums.
+    List<AST> allenums = new ArrayList<AST>();
+    List<AST> allmsgs = new ArrayList<AST>();
+    for(AST node: root.getNodeSet()) {
+        switch (node.getSort()) {
+        case ENUM:
+	    for(AST e: allenums) {
+		if(e.getName().equals(node.getName()))
+		    return duperror(node,e,"Duplicate Enum Names; will prevent proper C code generation");
+            }
+            break;
+        case MESSAGE:
+	    for(AST msg: allmsgs) {
+		if(msg.getName().equals(node.getName()))
+		    return duperror(node,msg,"Duplicate Message Names; will prevent proper C code generation");
+            }
+            break;
+        default:
+	    break;
+        }
+    }
+    return true;
 }
 
 boolean

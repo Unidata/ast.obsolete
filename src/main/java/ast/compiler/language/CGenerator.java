@@ -72,7 +72,7 @@ Exception: if the option "compile=..." references a file,
 then its declarations are generated also.
 */
 
-package unidata.protobuf.ast.compiler;
+package unidata.protobuf.ast.compiler.language;
 
 import gnu.getopt.Getopt;
 
