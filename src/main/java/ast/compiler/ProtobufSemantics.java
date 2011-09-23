@@ -423,6 +423,7 @@ collectnodesets(AST.Root root)
     List<AST> allnodes = root.getNodeSet();
     // Divide children lists
     for (AST node : allnodes) {
+	// divide the set of top-level node
         switch (node.getSort()) {
         case FILE:
             AST.File astfile = (AST.File) node;
@@ -430,7 +431,7 @@ collectnodesets(AST.Root root)
             astfile.setExtends(new ArrayList<AST.Extend>());
             astfile.setEnums(new ArrayList<AST.Enum>());
             astfile.setServices(new ArrayList<AST.Service>());
-            for (AST ast : astfile.getNodeSet()) {
+            for (AST ast : astfile.getChildSet()) {
                 switch (ast.getSort()) {
                 case ENUM:
                     astfile.getEnums().add((AST.Enum) ast);

@@ -363,29 +363,34 @@ generate_h(AST.File topfile, List<AST.File> files, Printer printer)
     printer.printf("#define %s_H\n",a.filebase.toUpperCase());
     printer.blankline();
 
+    List<AST> allenums = new ArrayList<AST>();
     for(AST.File f: files) {
-        // Generate the enum definitions
-        for(AST.Enum ast: f.getEnums()) {
-	    generate_enum(ast,printer);
-	}
+	flatten(f,AST.Enum.class,allenums);
+    }    
+    // Generate the enum definitions
+    for(AST ast: allenums) {
+        generate_enum((AST.Enum)ast,printer);
     }
 
     // Generate the message structure forwards
     printer.blankline();
     printer.printf("/* Forward definitions */\n");
+
+    List<AST> allmessages = new ArrayList<AST>();
     for(AST.File f: files) {
-        for(AST.Message ast: f.getMessages()) {
-            printer.printf("typedef struct %s %s;\n",
+	flatten(f,AST.Message.class,allmessages);
+    }    
+
+    // Generate the message definitions
+    for(AST ast: allmessages) {
+        printer.printf("typedef struct %s %s;\n",
 		converttocname(ast.getName()),
 		converttocname(ast.getName()));
-	}
     }
 
     // Generate the message structures
-    for(AST.File f: files) {
-        for(AST.Message ast: f.getMessages()) {
-	    generate_messagestruct(ast,printer);
-	}
+    for(AST ast: allmessages) {
+        generate_messagestruct((AST.Message)ast,printer);
     }
 
     printer.blankline();
@@ -1368,6 +1373,19 @@ generate_return(Printer printer) throws IOException
         printer.println("return ACATCH(status);");
     else
         printer.println("return status;");
+}
+
+
+// Generate a flattener
+static void
+flatten(AST root, Class target, List<AST> list) 
+{
+    for(AST node: root.getChildSet()) {
+        if(node.getClass() == target) {
+	    list.add(node);
+	    flatten(node,target,list);	 
+   	}
+    }
 }
 
 

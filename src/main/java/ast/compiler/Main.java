@@ -95,10 +95,8 @@ public class Main
 		break;
 	    case ':':
 	        usage("Command line option requires argument "+g.getOptopt());
-	        System.exit(1);
 	    case '?':
 	        usage("Illegal cmd line option: "+g.getOptopt());
-	        System.exit(1);
 	    default: break; // ignore
 	    }
         }
@@ -114,13 +112,11 @@ public class Main
         }
         if(classLanguageTag == null) {
 	    usage("Unknown language: "+optionLanguage);
-	    System.exit(1);
         }
 
 
 	if(arglist.size() == 0) {
 	    usage("No input file specified");
-	    System.exit(1);
 	}
 
 	String rawfilename = arglist.get(0);
@@ -129,12 +125,10 @@ public class Main
 
 	if(inputfilename == null) {
 	    usage("Cannot locate input file: "+rawfilename);
-	    System.exit(1);
 	}
 	File inputfile = new File(inputfilename);
 	if(!inputfile.canRead()) {
 	    usage("Cannot read input file: "+inputfile.toString());
-	    System.exit(1);
 	}
 	FileReader rdr = new FileReader(inputfile);
 
@@ -146,7 +140,6 @@ public class Main
 	boolean pass = parser.parse(rawfilename,rdr);
 	if(!pass) {
 	    usage("Parse failed");
-	    System.exit(1);
 	}
 
 	// Compute the post-getopt argv.
@@ -179,7 +172,6 @@ public class Main
 	    generator = (Generator)generatorclass.newInstance();
         } catch (ClassNotFoundException e) {
 	    usage("Generator class not found: "+generatorclassname);
-	    System.exit(1);
         }
 
 	// Semantic Processing
@@ -194,30 +186,25 @@ public class Main
 	// Invoke all the initializers
 	if(!sem.initialize(parser.getAST(),finalargv,factory)) {
 	    usage("Protobuf semantic initialization failure.");
-	    System.exit(1);
 	}
         if(!langsemantics.initialize(parser.getAST(),finalargv,factory)) {
             usage(optionLanguage+": semantic initialization failure.");
-            System.exit(1);
         }
 
         // Do semantic processing
 	pass = sem.process(parser.getAST());
 	if(!pass) {
 	    usage("Protobuf semantic error detected.");
-	    System.exit(1);
 	}
 
 	pass = langsemantics.process(parser.getAST());
 	if(!pass) {
 	    usage(optionLanguage+": semantic errors detected");
-	    System.exit(1);
 	}
 
         pass = generator.generate(parser.getAST(),finalargv);
         if(!pass) {
                 usage(optionLanguage+": code generation errors detected");
-                System.exit(1);
         }
 
 
@@ -227,21 +214,22 @@ public class Main
     {
 	System.err.println(msg);
 	System.err.print(
-"usage: java -jar ast.jar <options>*"
-+"where the options are:"
-+"-V              -- verbose."
-+"-D option=value -- define global options."
-+"-I include-file -- specify include file to include in .c output;"
-+"                   the file name may optionally be surrounded by <...>."
-+"-L language     -- specify the output language;"
-+"                   currently only C is suppported."
-+"-W woption      -- specify various subsidiary debug options:"
+"usage: java -jar ast.jar <options>*\n"
++"where the options are:\n"
++"-V              -- verbose.\n"
++"-D option=value -- define global options.\n"
++"-I include-file -- specify include file to include in .c output;\n"
++"                   the file name may optionally be surrounded by <...>.\n"
++"-L language     -- specify the output language;\n"
++"                   currently only C is suppported.\n"
++"-W woption      -- specify various subsidiary debug options:\n"
 +"                   'd' -- turn on general debugging."  
 +"                   'p' -- turn on parsing debug output."  
 +"                   't' -- track semantic steps."  
 +"                   's' -- general semantics debug"  
-+"                   'D' -- check for duplicates"
++"                   'D' -- check for duplicates\n"
 	);
 	System.err.flush();
+        System.exit(1);
     }    
 }

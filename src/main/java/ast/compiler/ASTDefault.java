@@ -387,10 +387,10 @@ File extends ASTDefault implements AST.File
     AST.File parentfile = null;
     List<AST.File> imports = null;
     List<AST> decls = new ArrayList<AST>();
-    List<AST.Message> messages = new ArrayList<AST.Message>();
-    List<AST.Extend> extenders = new ArrayList<AST.Extend>();
-    List<AST.Enum> enums = new ArrayList<AST.Enum>();
-    List<AST.Service> services = new ArrayList<AST.Service>();
+    List<AST.Message> messages = new ArrayList<AST.Message>();//top-level
+    List<AST.Extend> extenders = new ArrayList<AST.Extend>();//top-level
+    List<AST.Enum> enums = new ArrayList<AST.Enum>();//top-level
+    List<AST.Service> services = new ArrayList<AST.Service>();//top-level
 
     public File(String name)
     {

@@ -47,18 +47,18 @@
 <!-- Path sets -->
 <path id="javasrcdirs">
     <fileset dir="${src.main.java.ast.dir}/compiler"/>
-    <fileset dir="${src.main.java.ast.dir}/c"/>
     <fileset dir="${src.main.java.ast.dir}/gnu"/>
-    <fileset dir="${src.main.java.ast.dir}/java"/>
-    <fileset dir="${src.main.java.dir}/runtime"/>
+    <fileset dir="${src.main.java.ast.dir}/Ljava"/>
+    <fileset dir="${src.main.java.ast.dir}/Lc"/>
+    <fileset dir="${src.main.java.ast.dir}/runtime"/>
 </path>
 
 <path id="javasrc">
     <fileset dir="${src.main.java.ast.dir}/compiler" includes="*.java"/>
-    <fileset dir="${src.main.java.ast.dir}/c" includes="*.java"/>
+    <fileset dir="${src.main.java.ast.dir}/Lc" includes="*.java"/>
     <fileset dir="${src.main.java.ast.dir}/gnu" includes="*.java"/>
-    <fileset dir="${src.main.java.ast.dir}/java"/>
-    <fileset dir="${src.main.java.dir}/runtime"/>
+    <fileset dir="${src.main.java.ast.dir}/Ljava"/>
+    <fileset dir="${src.main.java.ast.dir}/runtime"/>
 </path>
 
 <!-- BUILD TASKS  -->
@@ -137,6 +137,15 @@
       <arg value="-o"/>
       <arg value="${parser}"/>
   </exec>
+</target>
+
+<target name="test">
+    <echo message="${build.classes}"/>
+    <echo message="${main.class}"/>
+    <java classpath="{build.classes}" classname="${main.class}">
+	<arg value="-Ljava"/>	
+	<arg value="${test.java.dir}/Primtests.proto"/>
+    </java>
 </target>
 
 </project>
