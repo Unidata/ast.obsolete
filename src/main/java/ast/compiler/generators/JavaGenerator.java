@@ -69,7 +69,7 @@ must be separately generated and compiled.
 
 */
 
-package unidata.protobuf.ast.compiler.language;
+package unidata.protobuf.ast.compiler.generators;
 
 import unidata.protobuf.ast.compiler.*;
 import gnu.getopt.Getopt;

@@ -30,7 +30,7 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler.language;
+package unidata.protobuf.ast.compiler.generators;
 
 import unidata.protobuf.ast.compiler.*;
 

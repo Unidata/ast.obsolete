@@ -22,7 +22,7 @@ public class Main
     };
 
     static final String DFALTLANGUAGE = "c";
-    static final String DFALTPACKAGE = "unidata.protobuf.ast.compiler.language";
+    static final String DFALTPACKAGE = "unidata.protobuf.ast.compiler.generators";
 
     static List<String> includePaths = new ArrayList<String>();
     static List<String> defines = new ArrayList<String>();
