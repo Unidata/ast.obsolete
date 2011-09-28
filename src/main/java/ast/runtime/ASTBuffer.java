@@ -7,26 +7,25 @@
 
 package unidata.protobuf.ast.runtime;
 
-// Wrapper class to hide buffer details
+// Wrapper class to provide expandable byte buffer
 
-class ByteBuffer
+class ASTBuffer
 {
-    byte[] buffer = new byte[Runtime.MAXJTYPESIZE];    
-    int pos = 0
-    int avail = buffer.length;
+    byte[] buffer = new byte[Runtime.Sort.MAXJTYPESIZE];
+    int pos = 0;
 
-    public ByteBuffer()
+    public ASTBuffer()
     {
     }
 
-    public ByteBuffer require(int space)
+    public ASTBuffer require(int space)
     {
-	return setRawBuffer(space + buffer.length);
+	return setLength(space + buffer.length);
     }
 
-    public buf[] getRawBuffer() {return buffer};
+    public byte[] getBuffer() {return buffer;}
 
-    public ByteBuffer setRawBuffer(int len)
+    public ASTBuffer setLength(int len)
     {
 	if(buffer.length < len) {
 	    byte[] newbuf = new byte[len];
@@ -34,21 +33,11 @@ class ByteBuffer
 		System.arraycopy(buffer,0,newbuf,0,pos);
 	    buffer = newbuf;
         }
-	avail = buffer.length - pos; // reset
 	return this;
     }
-
-    public int getAvail() {return avail;};
 
     public int  getLength() {return pos;};
-
-    public ByteBuffer setLength(int len)
-    {
-	if(len > buffer.length) setRawBuffer(len);
-	pos = len;
-	avail = buffer.length - pos;			
-	return this;
-    }
+    public int getAvail() {return buffer.length - pos;};
 
     public buf[] getContent()
     {
@@ -67,7 +56,6 @@ class ByteBuffer
 	require(len);
 	System.arraycopy(b,off,buffer,pos,len);
 	pos += len;
-	avail -= len;
     }
 
     public void
@@ -78,5 +66,6 @@ class ByteBuffer
 	avail--;
     }
 
+    public void rewind() {pos=0;}
 }
 

@@ -7,6 +7,7 @@
 
 package unidata.protobuf.ast.runtime;
 
+import unidata.protobuf.ast.runtime.*;
 import static unidata.protobuf.ast.runtime.Runtime.*;
 
 /*
@@ -19,6 +20,7 @@ as static methods.
 abstract public class Internal
 {
 
+/* IGNORE
 static public long
 jtypesize(Sort sort)
 {
@@ -49,49 +51,53 @@ jtypesize(Sort sort)
     }
     return 0;
 }
-
+IGNORE*/
 //////////////////////////////////////////////////
 
-/* Procedure to calulate size of a value */
-public long
+/* Procedure to calulate size of a value;
+   note that this is the size of an actual
+   value.
+ */
+
+public int
 get_size(Sort sort, float val)
 {
     assert(sort == Ast_float);
     return 4;
 }
 
-public long
+public int
 get_size(Sort sort, double val)
 {
     assert(sort == Ast_double);
     return 8;
 }
 
-public long
+public int
 get_size(Sort sort, boolean val)
 {
     assert(sort == Ast_boolean);
     return 1;
 }
 
-public long
+public int
 get_size(Sort sort, String val)
 {
-    assert(sort == Ast_string)
+    assert(sort == Sort.Ast_string) ;
     /* string count is size for length counter + strlen(string) */
-    long count = 0;
+    int count = 0;
     if(val != null) {
 	int slen = val.length();
         count = uint32_size(slen);
 	count += slen;
     }
-    return count
+    return count;
 }
 
-public long
+public int
 get_size(Sort sort, byte[] val)
 {
-    assert(sort == Ast_bytes)
+    assert(sort == Sort.Ast_bytes);
     long count = 0;
     if(val != null) {
 	count = uint32_size(val.length);
@@ -100,7 +106,7 @@ get_size(Sort sort, byte[] val)
     return count;
 }
 
-public long
+public int
 get_size(Sort sort, long val)
 {
     switch (sort) {
@@ -144,10 +150,10 @@ get_size(Sort sort, long val)
 */
 
 static public int
-readcount(int wiretype, byte[] buffer)
+readandcount(int wiretype, byte[] buffer)
     throws Exception
 {
-    long len = 0;
+    int len = 0;
     int count;
     switch (wiretype) {
     case Ast_varint:
@@ -166,18 +172,18 @@ readcount(int wiretype, byte[] buffer)
 	count = uint64_decode(len,buffer);	
 	break;
     default:
-	throw new Exception(AST_EFAIL);
+	throw new ASTException(AST_EFAIL);
     }
     return count;
 }
 
-static public long
+static public int
 readvarint(byte[] buffer)
-    throws IOException
+    throws ASTException
 {
     long i=0;
     boolean more = true;
-    while(i<VARINTMAX64 && more) {
+    while(i<Sort.MAXVARINTSIZE && more) {
 	if(!io.read(i,1,buffer)) return -1; // eof
 	if((0x80 & buffer[i]) == 0) more = false;
 	buffer[i] = 0x7f & buffer[i];
@@ -204,36 +210,36 @@ encode_tag(int wiretype, int fieldno, byte[] buffer)
 
 /* Pack an unsigned 32-bit integer in base-128 encoding, and
    return the number of bytes needed: this will be 5 or
-   less.
+   less. Note that for java, unsigned ints are encoded
+   as signed ints but with the bit pattern proper
+   for unsigned ints.
 */
 
 static public int
-uint32_encode(long value, byte[] out)
+uint32_encode(int value, byte[] out)
 {
   assert(out.length >= VARINTMAX);
   int rv = 0;
-  if(value >= 0x80)
-    {
-      out[rv++] = value | 0x80;
+  long unsigned = value;
+  unsigned = unsigned | 0xffffffff;
+  if(value >= 0x80)  {
+      out[rv++] = (byte)(value | 0x80);
       value >>>= 7;
-      if(value >= 0x80)
-        {
-          out[rv++] = value | 0x80;
+      if(value >= 0x80) {
+          out[rv++] = (byte)(value | 0x80);
           value >>>= 7;
-          if(value >= 0x80)
-            {
-              out[rv++] = value | 0x80;
+          if(value >= 0x80) {
+              out[rv++] = (byte)(value | 0x80);
               value >>>= 7;
-              if(value >= 0x80)
-                {
-                  out[rv++] = value | 0x80;
+	      if(value >= 80) {
+                  out[rv++] = (byte)(value | 0x80);
                   value >>>= 7;
                 }
             }
-        }
-    }
+      }
+  }
   assert(value<128);
-  out[rv++] = value;
+  out[rv++] = (byte)value;
   return rv;
 }
 
@@ -248,11 +254,11 @@ int32_encode(int value, byte[] out)
   assert(out.length >= VARINTMAX);
   if(value < 0)
     {
-      out[0] = value | 0x80;
-      out[1] =(value>>>7) | 0x80;
-      out[2] =(value>>>14) | 0x80;
-      out[3] =(value>>>21) | 0x80;
-      out[4] =(value>>>28) | 0x80;
+      out[0] = (value & (~0x7f)) | 0x80;
+      out[1] = ((value>>>7) & (~0x7f)) | 0x80;
+      out[2] = ((value>>>14) & (~0x7f)) | 0x80;
+      out[3] = ((value>>>21) & (~0x7f)) | 0x80;
+      out[4] = ((value>>>28) & (~0x7f)) | 0x80;
       out[5] = out[6] = out[7] = out[8] = 0xff;
       out[9] = 0x01;
       return 10;
@@ -284,14 +290,14 @@ static public int
 uint64_encode(long value, byte[] out)
 {
   long hi = value>>>32;
-  uint32_t lo = value;
+  long lo = (value & 0xffffffff);
   unsigned rv;
   if(hi == 0)
-    return uint32_encode((uint32_t)lo, out);
-  out[0] =(lo) | 0x80;
-  out[1] =(lo>>>7) | 0x80;
-  out[2] =(lo>>>14) | 0x80;
-  out[3] =(lo>>>21) | 0x80;
+    return uint32_encode((int)lo, out);
+  out[0] = (lo) | 0x80;
+  out[1] = (lo>>>7) | 0x80;
+  out[2] = (lo>>>14) | 0x80;
+  out[3] = (lo>>>21) | 0x80;
   if(hi < 8)
     {
       out[4] =(hi<<4) |(lo>>>28);
@@ -312,7 +318,7 @@ uint64_encode(long value, byte[] out)
   return rv;
 }
 
-/* Pack a 64-bit signed integer in zigzan encoding, return
+/* Pack a 64-bit signed integer in zigzag encoding, return
    the size of the packed output.  (Max returned value is 10)
 */
 
@@ -326,8 +332,8 @@ sint64_encode(long value, byte[] out)
    sfixed32, float
 */
 
-static public long
-fixed32_encode(long value, byte[] out)
+static public int
+fixed32_encode(int value, byte[] out)
 {
   // Assume java values are big endian
   out[0] = (value)|0xff;
@@ -350,7 +356,7 @@ static public long
 fixed64_encode(long value, byte[] out)
 {
   fixed32_encode(value, out);
-  fixed32_encode(value>>>32, out+4);
+  fixed32_encode((value>>>32)&0xffffffff, out+4);
   return 8;
 }
 
@@ -369,11 +375,11 @@ boolean_encode(boolean value, byte[] out)
 }
 
 /* Decode a 32 bit varint */
-static public long
-uint32_decode(long len0, byte[] data)
+static public int
+uint32_decode(int len0, byte[] data)
 {
-  long rv;
-  long len = len0;
+  int rv;
+  int len = len0;
 
   if(len > 5) len = 5;
   rv = data[0] & 0x7f;
@@ -392,20 +398,21 @@ uint32_decode(long len0, byte[] data)
 }
 
 static public int
-int32_decode(long len, byte[] data)
+int32_decode(int len, byte[] data)
 {
   return (int)uint32_decode(len,data);
 }
 
 /* Decode possibly 64-bit varint*/
 static public long
-uint64_decode(long len, byte[] data)
+uint64_decode(int len, byte[] data)
 {
-  unsigned shift, i;
+  int shift, i;
   long rv;
 
   if(len < 5) {
     rv = uint32_decode(len, data);
+    rv &= 0xffffffff;
   } else {
     rv =((data[0] & 0x7f))
               |((data[1] & 0x7f)<<7)
@@ -413,7 +420,7 @@ uint64_decode(long len, byte[] data)
               |((data[3] & 0x7f)<<21);
     shift = 28;
     for(i = 4; i < len; i++) {
-      rv |=(data[i]&0x7f) << shift);
+      rv |=(data[i]&0x7f) << shift;
       shift += 7;
     }
   }
@@ -421,12 +428,13 @@ uint64_decode(long len, byte[] data)
 }
 
 static public long
-int64_decode(long len, byte[] data)
+int64_decode(int len, byte[] data)
 {
   return uint64_decode(len, data);
 }
 
 /* Decode arbitrary varint upto 64bit */
+/*IGNORE
 static public long
 varint_decode(long buflen, byte[] buffer, long[] countp)
 {
@@ -443,11 +451,12 @@ varint_decode(long buflen, byte[] buffer, long[] countp)
   countp[0] = count;
   return rv;
 }
+IGNORE*/
 
-static public long
+static public int
 fixed32_decode(byte[] data)
 {
-  long rv;
+  int rv;
   rv = (data[0] |(data[1] << 8) |(data[2] << 16) |(data[3] << 24));
   return rv;
 }
@@ -455,7 +464,7 @@ fixed32_decode(byte[] data)
 static public long
 fixed64_decode(byte[] data)
 {
-  uint64_t rv;
+  long rv,rv2;
   byte[] upper = new byte[4];
 
   rv = fixed32_decode(data);
@@ -467,7 +476,7 @@ fixed64_decode(byte[] data)
 }
 
 static public boolean
-boolean_decode(long len, byte[] data)
+boolean_decode(int len, byte[] data)
 {
   int i;
   boolean tf;
@@ -481,13 +490,10 @@ boolean_decode(long len, byte[] data)
 
 /* return the zigzag-encoded 32-bit unsigned int from a 32-bit signed int */
 
-static public long
-zigzag32(int v)
+static public int
+zigzag32(int n)
 {
-  if(v < 0)
-    return((long)(-v)) * 2 - 1;
-  else
-    return ((long)v) * 2;
+  return (n << 1) ^ (n >> 31);
 }
 
 /* return the zigzag-encoded 64-bit unsigned int from a 64-bit signed int */
@@ -495,82 +501,48 @@ zigzag32(int v)
 static public long
 zigzag64(long v)
 {
-  if(v < 0)
-    return((long)(-v)) * 2 - 1;
-  else
-    return v * 2;
+    return (n << 1) ^ (n >> 63);
 }
 
 static public int
-unzigzag32(long v)
+unzigzag32(int n)
 {
-  if( v & 1 == 1)
-    return -(v>>>1) - 1;
-  else
-    return v>>>1;
+  return (n >>> 1) ^ -(n & 1);
 }
 
 static public long
-unzigzag64(long v)
+unzigzag64(long n)
 {
-  if(v & 1 == 1)
-    return -(v>>>1) - 1;
-  else
-    return v>>>1;
+  return (n >>> 1) ^ -(n & 1);
 }
 
-static public long
-get_tag_size(long number)
+static public int
+get_tag_size(int tag)
 {
-  if(number < (long)(1<<4))
-    return 1;
-  else if(number < (long)(1<<11))
-    return 2;
-  else if(number < (long)(1<<18))
-    return 3;
-  else if(number < (long)(1<<25))
-    return 4;
-  else
-    return 5;
+  return uint32_size(tag);
 }
 
 /* Return the number of bytes required to store
    a variable-length unsigned integer that fits in 32-bit uint
    in base-128 encoding. */
 
-static public long
-uint32_size(long v)
+static public int
+uint32_size(int v)
 {
-  if(v < (long)(1<<7))
-    return 1;
-  else if(v < (long)(1<<14))
-    return 2;
-  else if(v < (long)(1<<21))
-    return 3;
-  else if(v < (long)(1<<28))
-    return 4;
-  else
-    return 5;
+  if ((value & (0xffffffff <<  7)) == 0) return 1;
+  if ((value & (0xffffffff << 14)) == 0) return 2;
+  if ((value & (0xffffffff << 21)) == 0) return 3;
+  if ((value & (0xffffffff << 28)) == 0) return 4;
+  return 5;
 }
 
 /* Return the number of bytes required to store
    a variable-length signed integer that fits in 32-bit int
    in base-128 encoding. */
 static public long
-int32_size(int32_t v)
+int32_size(int v)
 {
-  if(v < (long)0)
-    return 10;
-  else if(v < (long)(1<<7))
-    return 1;
-  else if(v < (long)(1<<14))
-    return 2;
-  else if(v < (long)(1<<21))
-    return 3;
-  else if(v < (long)(1<<28))
-    return 4;
-  else
-    return 5;
+  return uint32_size(v);
 }
 
 /* Return the number of bytes required to store
@@ -579,21 +551,16 @@ int32_size(int32_t v)
 static public long
 uint64_size(long v)
 {
-  long upper_v =(v>>>32);
-  if(upper_v == 0)
-    return uint32_size((int)v);
-  else if(upper_v < (long)(1<<3))
-    return 5;
-  else if(upper_v < (long)(1<<10))
-    return 6;
-  else if(upper_v < (long)(1<<17))
-    return 7;
-  else if(upper_v < (long)(1<<24))
-    return 8;
-  else if(upper_v < (long)(1<<31))
-    return 9;
-  else
-    return 10;
+   if ((value & (0xffffffffffffffffL <<  7)) == 0) return 1;
+   if ((value & (0xffffffffffffffffL << 14)) == 0) return 2;
+   if ((value & (0xffffffffffffffffL << 21)) == 0) return 3;
+   if ((value & (0xffffffffffffffffL << 28)) == 0) return 4;
+   if ((value & (0xffffffffffffffffL << 35)) == 0) return 5;
+   if ((value & (0xffffffffffffffffL << 42)) == 0) return 6;
+   if ((value & (0xffffffffffffffffL << 49)) == 0) return 7;
+   if ((value & (0xffffffffffffffffL << 56)) == 0) return 8;
+   if ((value & (0xffffffffffffffffL << 63)) == 0) return 9;
+   return 10;
 }
 
 /* Return the number of bytes required to store
@@ -603,21 +570,7 @@ uint64_size(long v)
 static public long
 int64_size(long v)
 {
-  long upper_v = (v>>>32);
-  if(upper_v == 0)
-    return int32_size((int)v);
-  else if(upper_v < (long)(1<<3))
-    return 5;
-  else if(upper_v < (long)(1<<10))
-    return 6;
-  else if(upper_v < (long)(1<<17))
-    return 7;
-  else if(upper_v < (long)(1<<24))
-    return 8;
-  else if(upper_v < (long)(1<<31))
-    return 9;
-  else
-    return 10;
+  return uint64_size(v);
 }
 
 /* Return the number of bytes required to store
