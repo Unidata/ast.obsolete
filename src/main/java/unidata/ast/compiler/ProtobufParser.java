@@ -30,7 +30,7 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-package unidata.protobuf.ast.compiler;
+package unidata.ast.compiler;
 /* First part of user declarations.  */
 
 /* "%code imports" blocks.  */

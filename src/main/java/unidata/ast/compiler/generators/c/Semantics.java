@@ -30,16 +30,16 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler.generators.c;
+package unidata.ast.compiler.generators.c;
 
-import unidata.protobuf.ast.compiler.*;
+import unidata.ast.compiler.*;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.io.*;
 
-import static unidata.protobuf.ast.compiler.AST.*;
-import static unidata.protobuf.ast.compiler.Debug.*;
+import static unidata.ast.compiler.AST.*;
+import static unidata.ast.compiler.Debug.*;
 
 /**
  * Implement any needed semantic tests

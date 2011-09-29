@@ -69,15 +69,15 @@ must be separately generated and compiled.
 
 */
 
-package unidata.protobuf.ast.compiler.generators.java;
+package unidata.ast.compiler.generators.java;
 
-import unidata.protobuf.ast.compiler.*;
+import unidata.ast.compiler.*;
 import gnu.getopt.Getopt;
 
 import java.util.*;
 import java.io.*;
 
-public class JavaGenerator extends unidata.protobuf.ast.compiler.Generator
+public class JavaGenerator extends unidata.ast.compiler.Generator
 {
 
 //////////////////////////////////////////////////
@@ -355,9 +355,9 @@ generate_java(AST.File topfile, List<AST.File> files, Printer printer)
 
     // Add imports
 
-    // Start with unidata.protobuf.ast.Ast_Runtime
-    printer.println("import unidata.protobuf.ast.runtime.*;");
-    printer.println("import static unidata.protobuf.ast.Ast_Runtime.*;");
+    // Start with unidata.ast.Ast_Runtime
+    printer.println("import unidata.ast.runtime.*;");
+    printer.println("import static unidata.ast.Ast_Runtime.*;");
     printer.blankline();
 
     List<String> imports = new ArrayList<String>();

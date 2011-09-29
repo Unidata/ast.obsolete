@@ -30,15 +30,15 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler;
+package unidata.ast.compiler;
 
 import java.io.*;
 import java.util.Stack;
 import java.util.List;
 
-import unidata.protobuf.ast.compiler.AST.Position;
+import unidata.ast.compiler.AST.Position;
 
-import static unidata.protobuf.ast.compiler.ProtobufParser.*;
+import static unidata.ast.compiler.ProtobufParser.*;
 
 class ProtobufLexer implements Lexer {
 

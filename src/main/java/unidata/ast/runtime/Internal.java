@@ -5,9 +5,9 @@
  *   $Header$
  *********************************************************************/
 
-package unidata.protobuf.ast.runtime;
+package unidata.ast.runtime;
 
-import static unidata.protobuf.ast.runtime.ASTRuntime.*;
+import static unidata.ast.runtime.ASTRuntime.*;
 
 /*
 Procedures that are never called

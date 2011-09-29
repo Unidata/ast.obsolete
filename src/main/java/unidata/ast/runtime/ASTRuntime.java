@@ -5,12 +5,12 @@
  *   $Header$
  *********************************************************************/
 
-package unidata.protobuf.ast.runtime;
+package unidata.ast.runtime;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-import static unidata.protobuf.ast.runtime.Internal.*;
+import static unidata.ast.runtime.Internal.*;
 
 public class ASTRuntime
 {

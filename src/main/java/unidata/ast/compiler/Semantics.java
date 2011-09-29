@@ -30,8 +30,8 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler;
-import static unidata.protobuf.ast.compiler.AST.*;
+package unidata.ast.compiler;
+import static unidata.ast.compiler.AST.*;
 
 abstract public class Semantics
 {

@@ -72,9 +72,9 @@ Exception: if the option "compile=..." references a file,
 then its declarations are generated also.
 */
 
-package unidata.protobuf.ast.compiler.generators.c;
+package unidata.ast.compiler.generators.c;
 
-import unidata.protobuf.ast.compiler.*;
+import unidata.ast.compiler.*;
 import gnu.getopt.Getopt;
 
 import java.util.*;

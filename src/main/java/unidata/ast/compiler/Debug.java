@@ -30,12 +30,12 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler;
+package unidata.ast.compiler;
 
 import java.io.*;
 import java.util.*;
 
-import static unidata.protobuf.ast.compiler.AST.*;
+import static unidata.ast.compiler.AST.*;
 
 /* Debug includes Debug and Error related functions */
 

@@ -5,7 +5,7 @@
  *   $Header$
  *********************************************************************/
 
-package unidata.protobuf.ast.runtime;
+package unidata.ast.runtime;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

@@ -30,11 +30,11 @@
  * WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package unidata.protobuf.ast.compiler;
+package unidata.ast.compiler;
 
 import gnu.getopt.Getopt;
 import gnu.getopt.LongOpt;
-import unidata.protobuf.ast.compiler.*;
+import unidata.ast.compiler.*;
 
 import java.util.*;
 import java.io.*;
@@ -54,7 +54,7 @@ public class Main
     };
 
     static final String DFALTLANGUAGE = "c";
-    static final String DFALTPACKAGE = "unidata.protobuf.ast.compiler.generators";
+    static final String DFALTPACKAGE = "unidata.ast.compiler.generators";
 
     static List<String> includePaths = new ArrayList<String>();
     static List<String> defines = new ArrayList<String>();

@@ -30,7 +30,7 @@
  * with the access, use or performance of this software.
  */
 
-package unidata.protobuf.ast.compiler;
+package unidata.ast.compiler;
 
 import java.util.List;
 

@@ -5,7 +5,7 @@
  *   $Header$
  *********************************************************************/
 
-package unidata.protobuf.ast.runtime;
+package unidata.ast.runtime;
 
 // Wrapper class to provide expandable byte buffer
 
