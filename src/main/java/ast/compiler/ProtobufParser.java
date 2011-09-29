@@ -39,9 +39,6 @@ package unidata.protobuf.ast.compiler;
 /* Line 17 of "protobuf.y"  */
 
 import java.io.*;
-import unidata.protobuf.ast.compiler.AST.Position;
-
-
 
 /* Line 33 of lalr1.java  */
 /* Line 48 of "ProtobufParser.java"  */

@@ -7,29 +7,40 @@
 
 package unidata.protobuf.ast.runtime;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 public class ByteIO extends AbstractIO
 {
 
 /* Should be exactly eight characters long */
-static final char BYTEIO_UIDSTRING[] = new char[8]{"byteio  "};
+static final char BYTEIO_UIDSTRING[] = new char[]{'b','y','t','e','i','o',' ',' '};
 
-static uint64_t BYTEIO_UID = 0;
+// Read constructor(s)
 
-// Read constructor
 public
-Byteio(Runtime rt, IOmode mode, Object stream)
+ByteIO() // only if writing
     throws IOException
 {
-    super(rt,mode);    
+    this(IOmode.Ast_write,new ByteArrayOutputStream());
+}
+
+public
+ByteIO(IOmode mode, Object stream)
+    throws IOException
+{
+    super(mode);    
     switch (mode) {
-    case AST_READ:
-        if(stream == null)
+    case Ast_read:
+        if(stream == null || !(stream instanceof InputStream))
 	    throw new IOException("Byteio: no InputStream specified");
 	setStream((InputStream)stream);
 	break;
-    case AST_WRITE:    case AST_WRITE:
-        if(stream == null)
-	    stream = new StringBufferOutputStream();
+    case Ast_write:
+        if(stream == null || !(stream instanceof OutputStream))
+	    throw new IOException("Byteio: no OutputStream specified");
 	setStream((OutputStream)stream);
 	break;
     }

@@ -7,10 +7,15 @@
 
 package unidata.protobuf.ast.runtime;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Stack;
+
 abstract public class AbstractIO
 {
 
-public enum IOmode {AST_READ, AST_WRITE;}
+public enum IOmode {Ast_read, Ast_write;}
 
 /* Max depth of the message tree */
 static final int MAX_STACK_SIZE = 1024;
@@ -19,47 +24,51 @@ static final int MAXJTYPESIZE = 16; //bytes
 //////////////////////////////////////////////////
 // Instance fields
 
-Runtime rt = null;
-IOmode mode = IOmode.AST_READ; /* Write/Read/Free (WRF) */
+IOmode mode = null;
 
 InputStream istream = null;
 OutputStream ostream = null;
 
 int avail = Integer.MAX_VALUE; // ~ infinite
 
-Stack<int> marks = new Stack<int>(); // track values of avail for reading only
+Stack<Integer> marks = new Stack<Integer>(); // track values of avail for reading only
 
 //////////////////////////////////////////////////
 // Constructor(s) 
 
-public AbstractIO(Runtime rt, IOmode mode)
+public AbstractIO(IOmode mode)
 {
-    this.rt = rt;
     this.mode = mode;
 }
 
 //////////////////////////////////////////////////
 // set/get
 
-void setStream(InputStream s) {istream = s;}
-void setStream(OutputStream s) {ostream = s;}
+public void setStream(InputStream s) {istream = s;}
+public InputStream getInputStream() {return istream;}
 
-IOmode getMode() {return mode;}
+public void setStream(OutputStream s) {ostream = s;}
+public OutputStream getOutputStream() {return ostream;}
+
+public IOmode getMode() {return mode;}
+public void setMode(IOmode mode) {this.mode = mode;}
 
 //////////////////////////////////////////////////
 // Subclass overrideable ; typically if input/output streams
 // do not provide sufficient semantics.
 
 public void
-write(long len, byte[] buf) /* writes stream n bytes at a time */
+write(int len, byte[] buf) /* writes stream n bytes at a time */
     throws IOException
 {
     if(ostream != null)
-	ostream.write(buf,0,len);    
+        ostream.write(buf,0,len);    
 }
 
+// This does not throw exception so we can
+// programmatically determine eof.
 public boolean
-read(long len, byte[] buf) // reads stream n bytes at a time;
+read(int len, byte[] buf) // reads stream n bytes at a time;
                            // return false if not enough bytes avail
     throws IOException
 {
@@ -67,18 +76,17 @@ read(long len, byte[] buf) // reads stream n bytes at a time;
 }
 
 public boolean
-read(long offset, long len, byte[] buf) // reads stream n bytes at a time;
+read(int offset, int len, byte[] buf) // reads stream n bytes at a time;
                            // return false if not enough bytes avail
     throws IOException
 {
     boolean ok = false;
     int count = -1;
-    if(istream != null) {
-	if(len > avail) break;
+    if(istream != null && len <= avail) {
 	int left = len;
 	int pos = offset;
 	while(left > 0) {
-	    int count = istream.read(buf,pos,left);
+	    count = istream.read(buf,pos,left);
 	    if(count < 0) break;
 	    left -= count;	    
 	    pos += count;
@@ -88,7 +96,7 @@ read(long offset, long len, byte[] buf) // reads stream n bytes at a time;
 }
 
 public void
-mark(long n)
+mark(int  n)
     throws IOException /* limit reads to n bytes */
 {
     if(n <= 0)
