@@ -1,7 +1,8 @@
 W=-WdT
 D=
 
-TESTS=Primtests.proto Bytetests.proto Msgtests.proto Enumtests.proto
+#TESTS=Primtests.proto Bytetests.proto Msgtests.proto Enumtests.proto
+TESTS=Primtests.proto
 
 RTSRC=
 
@@ -85,3 +86,8 @@ sync synch::
 
 jar::
 	cd f:/git/ast ; ant all
+
+test::
+	javac -classpath ".;${JARDIR}/${JAR}" ${TESTSRC}
+
+#	java -cp ".;${JARDIR}/${JAR}" 
