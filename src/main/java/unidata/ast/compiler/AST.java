@@ -159,6 +159,11 @@ AST
 
 	public void setUserDefined(boolean tf) {userdefined = tf;}
 	public void setSystem(boolean tf) {system = tf;}
+
+        public String toString()
+        {
+            return String.format("OptionDef(%s,%s)",name,typeref);
+        }
     }
 
     void setOptionDefs(List<OptionDef> defs);

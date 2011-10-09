@@ -38,8 +38,9 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-package unidata.ast.runtime;
+package unidata.ast.runtime.xdr;
 
+import static unidata.ast.runtime.*;
 import static unidata.ast.runtime.ASTRuntime.*;
 
 /*
@@ -52,42 +53,6 @@ as static methods.
 abstract public class Internal
 {
 
-/* IGNORE
-static public int
-jtypesize(int sort)
-{
-    switch(sort) {
-    case Sort.Ast_double: return 8;
-    case Sort.Ast_float: return 4;
-
-    case Sort.Ast_enum:
-    case Sort.Ast_bool:
-    case Sort.Ast_int32:
-    case Sort.Ast_sint32:
-    case Sort.Ast_fixed32:
-    case Sort.Ast_sfixed32:
-    case Sort.Ast_uint32: return 4;
-
-    case Sort.Ast_int64:
-    case Sort.Ast_sint64:
-    case Sort.Ast_fixed64:
-    case Sort.Ast_sfixed64:
-    case Sort.Ast_uint64: return 8;
-
-    case Sort.Ast_string: return 8;
-    case Sort.Ast_bytes: return 8;
-
-    case Sort.Ast_message:return 8;
-
-    default: assert(0);
-    }
-    return 0;
-}
-IGNORE*/
-//////////////////////////////////////////////////
-
-
-
 //////////////////////////////////////////////////
 
 
@@ -98,12 +63,9 @@ IGNORE*/
 static public int
 encode_tag(int wiretype, int fieldno, byte[] buffer)
 {
-    int key;
-    int count;
-
-    key = (wiretype | (fieldno << 3));
+    int key = (wiretype | (fieldno << 3));
     /* convert key to varint */
-    count = uint32_encode(key,buffer);
+    int count = uint32_encode(key,buffer);
     return count;
 }
 
@@ -118,17 +80,7 @@ encode_tag(int wiretype, int fieldno, byte[] buffer)
 static public int
 uint32_encode(int value, byte[] out)
 {
-    int count = 0;
-    while (true) {
-      if ((value & ~0x7F) == 0) {
-	out[count++] = (byte)(value & 0x7f);
-	break;
-      } else {
-	out[count++] = (byte)((value & 0x7f)|0x80);
-        value >>>= 7;
-      }
-    }
-    return count;
+    return fixed32_encode(value,out);
 }
 
 /* Pack a 32-bit signed integer, returning the number of
@@ -152,7 +104,7 @@ Pack a 32-bit integer in zigwag encoding.
 static public int
 sint32_encode(int value, byte[] out)
 {
-  return uint32_encode(zigzag32(value), out);
+    return fixed32_encode(value,out);
 }
 
 /* Pack a 64-bit unsigned integer that fits in a 64-bit uint,
@@ -167,17 +119,7 @@ int64_encode(long value, byte[] out)
 static public int
 uint64_encode(long value, byte[] out)
 {
-    int count = 0;
-    while (true) {
-      if ((value & ~0x7f) == 0) {
-	out[count++] = (byte)(value & 0x7f);
-	break;
-      } else {
-	out[count++] = (byte)((value & 0x7f)|0x80);
-        value >>>= 7;
-      }
-    }
-    return count;
+    return fixed64_encode(value, out);
 }
 
 /* Pack a 64-bit signed integer in zigzag encoding, return
@@ -187,7 +129,7 @@ uint64_encode(long value, byte[] out)
 static public int
 sint64_encode(long value, byte[] out)
 {
-  return uint64_encode(zigzag64(value), out);
+  return uint64_encode(value, out);
 }
 
 /* Pack a 32-bit value, little-endian.  Used for fixed32,
@@ -197,11 +139,11 @@ sint64_encode(long value, byte[] out)
 static public int
 fixed32_encode(int value, byte[] out)
 {
-  // Protobuf apparently uses little endian
-  out[0] = (byte)((value)&0xff);
-  out[1] = (byte)((value>>>8)&0xff);
-  out[2] = (byte)((value>>>16)&0xff);
-  out[3] = (byte)((value>>>24)&0xff);
+  // xdr uses big endian
+  out[3] = (byte)((value)&0xff);
+  out[2] = (byte)((value>>>8)&0xff);
+  out[1] = (byte)((value>>>16)&0xff);
+  out[0] = (byte)((value>>>24)&0xff);
   return 4;
 }
 
@@ -214,15 +156,14 @@ fixed32_encode(int value, byte[] out)
 static public int
 fixed64_encode(long value, byte[] out)
 {
-  // Protobuf apparently uses little endian
-  out[0] = (byte)((value)&0xff);
-  out[1] = (byte)((value>>>8)&0xff);
-  out[2] = (byte)((value>>>16)&0xff);
-  out[3] = (byte)((value>>>24)&0xff);
-  out[4] = (byte)((value>>>32)&0xff);
-  out[5] = (byte)((value>>>40)&0xff);
-  out[6] = (byte)((value>>>48)&0xff);
-  out[7] = (byte)((value>>>56)&0xff);
+  out[7] = (byte)((value)&0xff);
+  out[6] = (byte)((value>>>8)&0xff);
+  out[5] = (byte)((value>>>16)&0xff);
+  out[4] = (byte)((value>>>24)&0xff);
+  out[3] = (byte)((value>>>32)&0xff);
+  out[2] = (byte)((value>>>40)&0xff);
+  out[1] = (byte)((value>>>48)&0xff);
+  out[0] = (byte)((value>>>56)&0xff);
   return 8;
 }
 
@@ -236,8 +177,7 @@ fixed64_encode(long value, byte[] out)
 static public int
 bool_encode(boolean value, byte[] out)
 {
-  out[0] = (byte) (value ? 1 : 0);
-  return 1;
+    return fixed32_encode((value ? 1 : 0),out);
 }
 
 static public int
@@ -259,28 +199,7 @@ float64_encode(double value, byte[] out)
 static public int
 uint32_decode(int len, byte[] data)
 {
-    int pos=0;
-    byte tmp = data[pos++];
-    if(tmp >= 0)
-      return (int)tmp;
-    int result = tmp & 0x7f;
-    if ((tmp = data[pos++]) >= 0) {
-      result |= tmp << 7;
-    } else {
-      result |= (tmp & 0x7f) << 7;
-      if ((tmp = data[pos++]) >= 0) {
-        result |= tmp << 14;
-      } else {
-        result |= (tmp & 0x7f) << 14;
-        if ((tmp = data[pos++]) >= 0) {
-          result |= tmp << 21;
-        } else {
-          result |= (tmp & 0x7f) << 21;
-          result |= (tmp = data[pos++]) << 28;
-	}
-      }
-    }
-    return result;
+    return fixed32_decode(len,data);
 }
 
 static public int
@@ -293,16 +212,7 @@ int32_decode(int len, byte[] data)
 static public long
 uint64_decode(int len, byte[] data)
 {
-    int pos = 0;
-    int shift = 0;
-    long result = 0;
-    while (shift < 64) {
-      byte b = data[pos++];
-      result |= (long)(b & 0x7F) << shift;
-      if ((b & 0x80) == 0) break;
-      shift += 7;
-    }
-    return result;
+    return fixed64_decode(len,data);
 }
 
 static public long
@@ -311,35 +221,14 @@ int64_decode(int len, byte[] data)
   return uint64_decode(len, data);
 }
 
-/* Decode arbitrary varint upto 64bit */
-/*IGNORE
-static public long
-varint_decode(int len, byte[] valuebuffer, long[] countp)
-{
-  long shift, i;
-  long rv = 0;
-  long count = 0;
-
-  for(count=0,shift=0,i=0;i<buflen;i++,shift+=7) {
-    byte byt = valuebuffer[i];
-    count++;
-    rv = ((byt & 0x7f) << shift);
-    if((byt & 0x80)==0) break;
-  }
-  countp[0] = count;
-  return rv;
-}
-IGNORE*/
-
-/* remember: protobuf writes little-endian */
 static public int
 fixed32_decode(int len, byte[] data)
 {
   int rv = (
-        (((int)data[0])&0xff)
-      | (((int)data[1]&0xff) << 8)
-      | (((int)data[2]&0xff) << 16)
-      | (((int)data[3]&0xff) << 24)
+        (((int)data[3])&0xff)
+      | (((int)data[2]&0xff) << 8)
+      | (((int)data[1]&0xff) << 16)
+      | (((int)data[0]&0xff) << 24)
       );
   return rv;
 }
@@ -348,28 +237,22 @@ static public long
 fixed64_decode(int len, byte[] data)
 {
   long rv = 0;
-      rv |= (((long)data[0])&0xff);
-      rv |=(((long)data[1]&0xff) << 8);
-      rv |=(((long)data[2]&0xff) << 16);
-      rv |=(((long)data[3]&0xff) << 24);
-      rv |=(((long)data[4]&0xff) << 32);
-      rv |=(((long)data[5]&0xff) << 40);
-      rv |=(((long)data[6]&0xff) << 48);
-      rv |=(((long)data[7]&0xff) << 56);
+      rv |= (((long)data[7])&0xff);
+      rv |= (((long)data[6]&0xff) << 8);
+      rv |= (((long)data[5]&0xff) << 16);
+      rv |= (((long)data[4]&0xff) << 24);
+      rv |= (((long)data[3]&0xff) << 32);
+      rv |= (((long)data[2]&0xff) << 40);
+      rv |= (((long)data[1]&0xff) << 48);
+      rv |= (((long)data[0]&0xff) << 56);
   return rv;
 }
 
 static public boolean
 bool_decode(int len, byte[] data)
 {
-  int i;
-  boolean tf;
-
-  tf = false;
-  for(i = 0; i < len; i++) {
-    if((data[i] & 0x7f) != 0) tf = true;
-  }
-  return tf;
+    int i = fixed32_decode(len,data);
+    return (i==0? false : true);
 }
 
 static public double
@@ -386,39 +269,6 @@ float32_decode(int len, byte[] buffer)
    return Float.intBitsToFloat(i);
 }
 
-
-/* return the zigzag-encoded 32-bit unsigned int from a 32-bit signed int */
-
-static public int
-zigzag32(int n)
-{
-  int zz = (n << 1) ^ (n >> 31);
-  return zz;
-}
-
-/* return the zigzag-encoded 64-bit unsigned int from a 64-bit signed int */
-
-static public long
-zigzag64(long n)
-{
-    long zz = (n << 1) ^ (n >> 63);
-    return zz;
-}
-
-static public int
-unzigzag32(int n)
-{
-  int zz = (n >>> 1) ^ -(n & 1);
-  return zz;
-}
-
-static public long
-unzigzag64(long n)
-{
-  long zz = (n >>> 1) ^ -(n & 1);
-  return zz;
-}
-
 static public int
 getTagSize(int tag)
 {
@@ -427,16 +277,13 @@ getTagSize(int tag)
 
 /* Return the number of bytes required to store
    a variable-length unsigned integer that fits in 32-bit uint
-   in base-128 encoding. */
+   in xdr encoding.
+*/
 
 static public int
 uint32_size(int value)
 {
-  if ((value & (0xffffffff <<  7)) == 0) return 1;
-  if ((value & (0xffffffff << 14)) == 0) return 2;
-  if ((value & (0xffffffff << 21)) == 0) return 3;
-  if ((value & (0xffffffff << 28)) == 0) return 4;
-  return 5;
+    return 4;
 }
 
 /* Return the number of bytes required to store
@@ -454,16 +301,7 @@ int32_size(int v)
 static public int
 uint64_size(long value)
 {
-   if ((value & (0xffffffffffffffffL <<  7)) == 0) return 1;
-   if ((value & (0xffffffffffffffffL << 14)) == 0) return 2;
-   if ((value & (0xffffffffffffffffL << 21)) == 0) return 3;
-   if ((value & (0xffffffffffffffffL << 28)) == 0) return 4;
-   if ((value & (0xffffffffffffffffL << 35)) == 0) return 5;
-   if ((value & (0xffffffffffffffffL << 42)) == 0) return 6;
-   if ((value & (0xffffffffffffffffL << 49)) == 0) return 7;
-   if ((value & (0xffffffffffffffffL << 56)) == 0) return 8;
-   if ((value & (0xffffffffffffffffL << 63)) == 0) return 9;
-   return 10;
+    return 8;
 }
 
 /* Return the number of bytes required to store
@@ -484,7 +322,7 @@ int64_size(long v)
 static public int
 sint32_size(int v)
 {
-  return uint32_size(zigzag32(v));
+  return uint32_size(v);
 }
 
 
@@ -495,7 +333,7 @@ sint32_size(int v)
 static public int
 sint64_size(long v)
 {
-  return uint64_size(zigzag64(v));
+  return uint64_size(v);
 }
 
 

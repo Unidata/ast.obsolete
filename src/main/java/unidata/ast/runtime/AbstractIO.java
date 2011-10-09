@@ -31,23 +31,47 @@ OutputStream ostream = null;
 
 int avail = Integer.MAX_VALUE; // ~ infinite
 
-Stack<Integer> marks = new Stack<Integer>(); // track values of avail for reading only
+Stack<Integer> marks = null; // track values of avail for reading only
 
 //////////////////////////////////////////////////
 // Constructor(s) 
 
-public AbstractIO(IOmode mode)
+public AbstractIO()
 {
-    this.mode = mode;
+    reset();
 }
 
+void reset()
+{
+    istream = null;
+    ostream = null;
+    mode = null;
+    marks = new Stack<Integer>(); // track values of avail for reading only
+    avail = Integer.MAX_VALUE; // ~ infinite
+}
 //////////////////////////////////////////////////
 // set/get
 
-public void setStream(InputStream s) {istream = s;}
-public InputStream getInputStream() {return istream;}
+public void setAvail(int avail)
+{
+   this.avail = avail;
+}
 
-public void setStream(OutputStream s) {ostream = s;}
+public void setStream(InputStream s)
+{
+    reset();
+    istream = s;
+    setMode(IOmode.Ast_read);
+}
+
+public void setStream(OutputStream s)
+{
+    reset();
+    ostream = s;
+    setMode(IOmode.Ast_write);
+}
+
+public InputStream getInputStream() {return istream;}
 public OutputStream getOutputStream() {return ostream;}
 
 public IOmode getMode() {return mode;}
@@ -67,37 +91,30 @@ write(int len, byte[] buf) /* writes stream n bytes at a time */
 
 // This does not throw exception so we can
 // programmatically determine eof.
-public boolean
-read(int len, byte[] buf) // reads stream n bytes at a time;
-                           // return false if not enough bytes avail
-    throws IOException
-{
-    return read(0,len,buf);
-}
 
 public boolean
-read(int offset, int len, byte[] buf) // reads stream n bytes at a time;
+read(byte[] buf, int offset, int len) // reads stream n bytes at a time;
                            // return false if not enough bytes avail
     throws IOException
 {
-    boolean ok = false;
-    int count = -1;
     if(istream != null && len <= avail) {
 	int left = len;
 	int pos = offset;
 	while(left > 0) {
-	    count = istream.read(buf,pos,left);
+	    int count = istream.read(buf,pos,left);
 	    if(count < 0) break;
 	    left -= count;	    
 	    pos += count;
+            avail -= count;
 	}
+        if(left == 0) return true;
     }
-    return ok;
+    return false;
 }
 
 public void
 mark(int  n)
-    throws IOException /* limit reads to n bytes */
+    throws IOException // limit reads to n bytes
 {
     if(n <= 0)
 	throw new IOException("AbstractIO.mark: illegal argument "+n);
@@ -106,7 +123,7 @@ mark(int  n)
 }
 
 public void
-unmark() /* restore previous markn limit */
+unmark() // restore previous markn limit
     throws IOException 
 {
     if(marks.empty())

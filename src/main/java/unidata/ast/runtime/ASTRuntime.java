@@ -9,76 +9,100 @@ package unidata.ast.runtime;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.lang.reflect.Array;
 
 import static unidata.ast.runtime.Internal.*;
 
 public class ASTRuntime
 {
 
-/* Define error codes as strings  */
-static final String AST_EOF = "";
-static final String AST_ENOMEM = "";
-static final String AST_EFAIL= "";
-static final String AST_EIO = "";
-static final String AST_ECURL = "";
+/**
+ * Simulate all enums as integer within static classes.
+ * Deliberately do not use enumeration
+ * for (possibly misplaced) efficiency.
+ */
+
 
 /* Define primitive types enum */
-public enum Sort {
-    Ast_double(8,Ast_64bit),
-    Ast_float(4,Ast_32bit),
-    Ast_int32(0,Ast_varint),
-    Ast_uint32(0,Ast_varint),
-    Ast_int64(0,Ast_varint),
-    Ast_uint64(0,Ast_varint),
-    Ast_sint32(0,Ast_varint),
-    Ast_sint64(0,Ast_varint),
-    Ast_fixed32(4,Ast_32bit),
-    Ast_fixed64(8,Ast_64bit),
-    Ast_sfixed32(4,Ast_32bit),
-    Ast_sfixed64(8,Ast_64bit),
-    Ast_string(0,Ast_counted),
-    Ast_bytes(0,Ast_counted),
-    Ast_bool(0,Ast_varint),
-    Ast_enum(4,Ast_varint),
-    Ast_message(0,Ast_counted);
+static public class Sort
+{
+    static public final int Ast_double = 0;
+    static public final int Ast_float = 1;
+    static public final int Ast_int32 = 2;
+    static public final int Ast_uint32 = 3;
+    static public final int Ast_int64 = 4;
+    static public final int Ast_uint64 = 5;
+    static public final int Ast_sint32 = 6;
+    static public final int Ast_sint64 = 7;
+    static public final int Ast_fixed32 = 8;
+    static public final int Ast_fixed64 = 9;
+    static public final int Ast_sfixed32 = 10;
+    static public final int Ast_sfixed64 = 11;
+    static public final int Ast_string = 12;
+    static public final int Ast_bytes = 13;
+    static public final int Ast_bool = 14;
+    static public final int Ast_enum = 15;
+    static public final int Ast_message = 16;
 
-    static final int MAXTYPESIZE = 8;
-    static final int MAXVARINTSIZE = 10;
+    static public final int MAXTYPESIZE = 16;
+    static public final int MAXVARINTSIZE = 10;
 
-    private final int size;
-    private final int wiretype;
-    Sort(int size, int wiretype) {this.size = size; this.wiretype = wiretype;}
-    public int javasize() {return size; }
-    public int wiretype() {return wiretype; }
+    static public int javasize(int sort)
+    {
+	switch (sort) {
+        case Ast_float: case Ast_fixed32: case Ast_sfixed32: case Ast_enum: return 4;
+        case Ast_double: case Ast_fixed64: case Ast_sfixed64: return 8;
+        case Ast_bool: return 1;
+	default: break;
+	}
+	return 0;
+    }
 
-} /*enum Sort*/
+    static public int wiretype(int sort)
+    {
+	switch (sort) {
+	case Ast_float: case Ast_fixed32: case Ast_sfixed32:
+	    return Wiretype.Ast_32bit;
+	case Ast_double: case Ast_fixed64: case Ast_sfixed64:
+	    return Wiretype.Ast_64bit;
+	case Ast_string: case Ast_bytes: case Ast_message:
+	    return Wiretype.Ast_counted;
+	default:
+	}
+	return Wiretype.Ast_varint;
+    }
 
-/* Define wiretypes as integers, not enum*/
-static final int Ast_varint = (0); /* int32, int64, uint32, uint64, sint32, sint64, bool, enum*/
-static final int Ast_64bit = (1); /* fixed64, sfixed64, double*/
-static final int Ast_counted = (2); /* Length-delimited: string, bytes, embedded messages, packed repeated fields*/
-static final int Ast_startgroup = (3); /* Start group (deprecated) */
-static final int Ast_endgroup = (4); /* end group (deprecated) */
-static final int Ast_32bit = (5); /* fixed32, sfixed32, float*/
+} /*Sort*/
 
-/* Define the field modes */
-public enum Fieldmode {
-    Ast_required,
-    Ast_optional,
-    Ast_repeated;
+static public class Wiretype
+{
+    static public final int Ast_varint = (0); //int64,uint32,uint64,sint32,sint64,bool,enum
+    static public final int Ast_64bit = (1); //fixed64,sfixed64,double
+    static public final int Ast_counted = (2); //string,bytes,messages,packed
+    static public final int Ast_startgroup = (3); //Start group (deprecated)
+    static public final int Ast_endgroup = (4); // end group (deprecated)
+    static public final int Ast_32bit = (5); //fixed32,sfixed32,float
 }
 
+/* Define the field modes */
+static public class Fieldmode {
+    static public final int Ast_required = 0;
+    static public final int Ast_optional = 1;
+    static public final int Ast_repeated = 2;
+}
 
-static final Charset utf8 = Charset.forName("utf-8");
+static public final Charset utf8 = Charset.forName("utf-8");
 
 //////////////////////////////////////////////////
 // Instance fields
 
 AbstractIO io = null;
 
-byte[] buffer = new byte[Sort.MAXTYPESIZE]; // max needed except for string|bytes
+byte[] valuebuffer = new byte[Sort.MAXTYPESIZE]; // size is max needed except for string|bytes|packed
+                                                 // used to encode single primitive values
+byte[] sizebuffer = new byte[Sort.MAXTYPESIZE]; // used to encode tags and sizes.
 
-ByteBuffer abuffer = new ByteBuffer();
+ByteBuffer varintbuffer = new ByteBuffer(); // for writing packed data that is encoded as varints
 
 //////////////////////////////////////////////////
 // Constructor(s)
@@ -112,6 +136,37 @@ close()
     io.close();
 }
 
+//////////////////////////////////////////////////
+// Wrappers for io.read and io.write  etc
+
+boolean
+read(byte[] buf, int offset, int len) throws IOException
+{
+    return io.read(buf, offset,len);
+}
+
+void
+write(int len, byte[] buf) throws IOException
+{
+    io.write(len,buf);
+}
+
+void
+mark(int avail)
+    throws IOException
+{
+    io.mark(avail);    
+}
+
+void
+unmark()
+    throws IOException
+{
+    io.unmark();
+}
+
+
+//////////////////////////////////////////////////
 /* Given an unknown field, skip past it */
 void
 skip_field(int wiretype, int fieldno)
@@ -119,24 +174,24 @@ skip_field(int wiretype, int fieldno)
 {
     int len;
     switch (wiretype) {
-    case Ast_varint:
-        len = readvarint(buffer);
+    case Wiretype.Ast_varint:
+        len = readvarint(valuebuffer);
 	break;
-    case Ast_32bit:
-        read((len=4),buffer);
+    case Wiretype.Ast_32bit:
+        read(valuebuffer, 0,(len=4));
 	break;
-    case Ast_64bit:
+    case Wiretype.Ast_64bit:
 	len = 8;
-        read((len=8),buffer);
+        read(valuebuffer, 0,(len=8));
 	break;
-    case Ast_counted:
-        len = readvarint(buffer);
+    case Wiretype.Ast_counted:
+        len = readvarint(valuebuffer);
         /* get the count */
-	len = uint32_decode(len,buffer);
+	len = uint32_decode(len, valuebuffer);
 	/* Now skip "len" bytes */
 	while(len > 0) {
-	    int count = (len > buffer.length?buffer.length:len);
-	    if(!read(count,buffer))
+	    int count = (len > valuebuffer.length? valuebuffer.length:len);
+	    if(!read(valuebuffer, 0,count))
 		throw new ASTException("skip_field: too few bytes");
 	    len -= count;
 	}
@@ -147,34 +202,164 @@ skip_field(int wiretype, int fieldno)
 }
 
 //////////////////////////////////////////////////
-// Wrappers for io.read and io.write
+/* Procedure to calulate size of a value;
+   note that this is the size of an actual
+   value.
+ */
 
-boolean read(int len, byte[] buf) throws IOException
-{return io.read(len,buf);}
+int
+getSize(int sort, float val)
+{
+    assert(sort == Sort.Ast_float);
+    return 4;
+}
 
-void write(int len, byte[] buf) throws IOException {io.write(len,buf);}
+int
+getSize(int sort, double val)
+{
+    assert(sort == Sort.Ast_double);
+    return 8;
+}
+
+int
+getSize(int sort, boolean val)
+{
+    assert(sort == Sort.Ast_bool);
+    return 1;
+}
+
+int
+getSize(int sort, String val)
+{
+    assert(sort == Sort.Ast_string) ;
+    /* string count is size for length counter + strlen(string) */
+    int count = 0;
+    if(val != null) {
+	int slen = val.length();
+        count = uint32_size(slen);
+	count += slen;
+    }
+    return count;
+}
+
+int
+getSize(int sort, byte[] val)
+{
+    assert(sort == Sort.Ast_bytes);
+    int count = 0;
+    if(val != null) {
+	count = uint32_size(val.length);
+        count += val.length;
+    }
+    return count;
+}
+
+int
+getSize(int sort, long val)
+        throws ASTException
+{
+    switch (sort) {
+    case Sort.Ast_enum: /* fall thru */
+    case Sort.Ast_int32:
+	return int32_size((int)val);
+    case Sort.Ast_int64:
+	return int64_size(val);
+    case Sort.Ast_uint32:
+	return uint32_size((int)val);
+    case Sort.Ast_uint64:
+	return uint64_size(val);
+    case Sort.Ast_sint32:
+	return sint32_size((int)val);
+    case Sort.Ast_sint64:
+	return sint64_size(val);
+    case Sort.Ast_fixed32:
+	return 4;
+    case Sort.Ast_sfixed32:
+	return 4;
+    case Sort.Ast_fixed64:
+	return 8;
+    case Sort.Ast_sfixed64:
+	return 8;
+    default:
+	break;
+    }
+    throw new ASTException("Unexpected Sort: "+sort);
+}
+
+int
+getSizePacked(int sort, int[] val)
+{
+    switch (Sort.wiretype(sort)) {
+    case Wiretype.Ast_varint:
+	// Sigh! we have to walk it
+	int size = 0;
+	for(int i=0;i<val.length;i++)
+	    size += int64_size((long)val[i]);
+	return size;
+    case Wiretype.Ast_32bit:
+	return 4*val.length;
+    default: break;
+    }
+    throw new ASTRuntimeException("Illegal packed Sort");
+}
+
+int
+getSizePacked(int sort, long[] val)
+{
+    switch (Sort.wiretype(sort)) {
+    case Wiretype.Ast_varint:
+	// Sigh! we have to walk it
+	int size = 0;
+	for(int i=0;i<val.length;i++)
+	    size += int64_size(val[i]);
+	return size;
+    case Wiretype.Ast_64bit:
+	return 8*val.length;
+    default: break;
+    }
+    throw new ASTRuntimeException("Illegal packed Sort");
+}
+
+int
+getSizePacked(int sort, float[] val)
+{
+    return 4*val.length;
+}
+
+int
+getSizePacked(int sort, double[] val)
+{
+    return 8*val.length;
+}
+
+int
+getSizePacked(int sort, boolean[] val)
+{
+    return 1*val.length;
+}
+
 
 //////////////////////////////////////////////////
 /* Procedure to calulate size of a tag */
-public int
-getTagSize(Sort sort, int fieldno)
+int
+getTagSize(int sort, int fieldno)
 {
-    int wiretype = sort.wiretype();
-    int count = encode_tag(wiretype,fieldno,buffer);
+    int wiretype = Sort.wiretype(sort);
+    int count = encode_tag(wiretype,fieldno, sizebuffer);
     return count;
 }
 
 /* Procedures to read/write tags */
-public void
+void
 write_tag(int wiretype, int fieldno)
     throws IOException
 {
-    int count = encode_tag(wiretype,fieldno,buffer);
-    io.write(count,buffer);
+    int count = encode_tag(wiretype,fieldno, sizebuffer);
+    io.write(count, sizebuffer);
 }
 
 /* Procedure to extract tags; args simulate call by ref */
-public void 
+boolean
 read_tag(int[] wiretype, int[] fieldno)
     throws IOException
 {
@@ -182,83 +367,84 @@ read_tag(int[] wiretype, int[] fieldno)
     int key;
 
     /* Extract the wiretype + index */
-    count = readvarint(buffer);
+    count = readvarint(sizebuffer);
+    if(count < 0) return false;
 
     /* convert from varint */
-    key = uint32_decode(count,buffer);
+    key = uint32_decode(count, sizebuffer);
 
     /* Extract the wiretype and fieldno */
     wiretype[0] = (key & 0x7);
     fieldno[0] = (key >>> 3);
+
+    return true;
 }
 
-/* Procedure to write out size */
-public void
+/* Procedures to write out counts */
+void
 write_size(int size)
     throws IOException
 {
     /* write size as varint */
-    int len = uint32_encode(size,buffer);
-    io.write(len,buffer);
+    int len = uint32_encode(size, sizebuffer);
+    io.write(len, sizebuffer);
 }
 
 /* Procedure to extract size */
-public int
+int
 read_size()
     throws IOException
 {
-    int len = readvarint(buffer);
-    return uint32_decode(len, buffer);
+    int len = readvarint(sizebuffer);
+    if(len < 0) return len;
+    return uint32_decode(len, sizebuffer);
 }
 
 //////////////////////////////////////////////////
 
-public int
+int
 readvarint(byte[] buffer)
     throws IOException
 {
-    int i=0;
-    boolean more = true;
-    while(i<Sort.MAXVARINTSIZE && more) {
-	if(!read(1,buffer)) return -1; // eof
-	if((0x80 & buffer[i]) == 0) more = false;
-	buffer[i] = (byte)(0x7f & buffer[i]);
-        i++;
+    for(int i=0;i<buffer.length;i++) {
+	if(!read(buffer, i,1))
+            return -1; // eof
+	if((0x80 & buffer[i]) == 0) return i+1;
     }
-    return i;
+    return 0;
 }
 
 /* Based on the wiretype, extract the proper number of bytes
    for an integer base value; return the length
-   and place the bytes into the buffer.
+   and place the bytes into the valuebuffer.
    For ast counted, do this for the count,
    not the content.
 */
 
-public int
+int
 readandcount(int wiretype, byte[] buffer)
     throws IOException
 {
     int len = 0;
     int count;
     switch (wiretype) {
-    case Ast_varint:
+    case Wiretype.Ast_varint:
         count = readvarint(buffer);
 	break;
-    case Ast_32bit:
+    case Wiretype.Ast_32bit:
 	count = 4;
-        if(!read(4,buffer)) count = -1;
+        if(!read(buffer, 0,4)) count = -1;
 	break;
-    case Ast_64bit:
+    case Wiretype.Ast_64bit:
 	count = 8;
-        if(!read(8,buffer)) count = -1;
+        if(!read(buffer, 0,8)) count = -1;
 	break;
-    case Ast_counted: /* get the count */
+    case Wiretype.Ast_counted: /* get the count */
         len = readvarint(buffer);
 	count = uint32_decode(len,buffer);
 	break;
     default:
-	throw new ASTException(AST_EFAIL);
+	throw new ASTException("Unexpected wiretype: "+wiretype);
     }
     return count;
 }
@@ -266,169 +452,176 @@ readandcount(int wiretype, byte[] buffer)
 //////////////////////////////////////////////////
 
 double
-read_primitive_double()
+read_primitive_double(int sort)
     throws IOException
 {
-    int wiretype = Sort.Ast_double.wiretype();
-    int len = readandcount(wiretype, buffer);
-    double value = float64_decode(buffer);
+    assert(sort == Sort.Ast_double);
+    int wiretype = Sort.wiretype(sort);
+    int len = readandcount(wiretype, valuebuffer);
+    double value = float64_decode(Sort.javasize(Sort.Ast_double), valuebuffer);
     return value;
 }
 
 float
-read_primitive_float()
+read_primitive_float(int sort)
     throws IOException
 {
-    int wiretype = Sort.Ast_float.wiretype();
-    long len = readandcount(wiretype, buffer);
-    float value = float32_decode(buffer);
+    assert(sort == Sort.Ast_float);
+    int wiretype = Sort.wiretype(sort);
+    long len = readandcount(wiretype, valuebuffer);
+    float value = float32_decode(Sort.javasize(Sort.Ast_float), valuebuffer);
     return value;
 }
 
 boolean
-read_primitive_boolean()
+read_primitive_boolean(int sort)
     throws IOException
 {
-    int wiretype = Sort.Ast_bool.wiretype();
-    int len = readandcount(wiretype, buffer);
-    boolean value = bool_decode(len,buffer);
+    assert(sort == Sort.Ast_bool);
+    int wiretype = Sort.wiretype(sort);
+    int len = readandcount(wiretype, valuebuffer);
+    boolean value = bool_decode(len, valuebuffer);
     return value;
 }
 
 String
-read_primitive_string()
+read_primitive_string(int sort)
     throws IOException
 {
-    int wiretype = Sort.Ast_string.wiretype();
-    int len = readandcount(wiretype, buffer);
+    assert(sort == Sort.Ast_string);
+    int wiretype = Sort.wiretype(sort);
+    int len = readandcount(wiretype, valuebuffer);
     byte[] stringbuf = new byte[len];
-    if(!read(len,stringbuf))
+    if(!read(stringbuf, 0,len))
 	throw new ASTException("too few bytes");
     return new String(stringbuf,utf8);
 }
 
 byte[]
-read_primitive_bytes()
+read_primitive_bytes(int sort)
     throws IOException
 {
-    int wiretype = Sort.Ast_bytes.wiretype();
-    int len = readandcount(wiretype, buffer);
+    assert(sort == Sort.Ast_bytes);
+    int wiretype = Sort.wiretype(sort);
+    int len = readandcount(wiretype, valuebuffer);
     byte[] value = new byte[len];
-    if(!read(len,value))
+    if(!read(value, 0,len))
 	throw new ASTException("too few bytes");
-    System.arraycopy(buffer,0,value,0,len);
     return value;
 }
 
 int
-read_primitive_int(Sort sort)
+read_primitive_int(int sort)
     throws IOException
 {
     /* compute the wiretype from the sort */
-    int wiretype = sort.wiretype();
-    int len = readandcount(wiretype, buffer);
+    int wiretype = Sort.wiretype(sort);
+    int len = readandcount(wiretype, valuebuffer);
     switch (sort) {
-    case Ast_enum: /* fall thru */
-    case Ast_int32:
-        return int32_decode(len,buffer);
-    case Ast_uint32:
-        return uint32_decode(len,buffer);
-    case Ast_sint32:
-        return unzigzag32(uint32_decode(len,buffer));
-    case Ast_fixed32:
-        return fixed32_decode(buffer);
-    case Ast_sfixed32:
-        return fixed32_decode(buffer);
+    case Sort.Ast_enum: /* fall thru */
+    case Sort.Ast_int32:
+        return int32_decode(len, valuebuffer);
+    case Sort.Ast_uint32:
+        return uint32_decode(len, valuebuffer);
+    case Sort.Ast_sint32:
+        return unzigzag32(uint32_decode(len, valuebuffer));
+    case Sort.Ast_fixed32:
+        return fixed32_decode(4, valuebuffer);
+    case Sort.Ast_sfixed32:
+        return fixed32_decode(4, valuebuffer);
     default: break;
     }
-    throw new ASTException(AST_EFAIL);
+    throw new ASTException("Unexpected sort: " + sort);
 }
 
 long
-read_primitive_int64(Sort sort)
+read_primitive_long(int sort)
     throws IOException
 {
     /* compute the wiretype from the sort */
-    int wiretype = sort.wiretype();
-    int len = readandcount(wiretype, buffer);
+    int wiretype = Sort.wiretype(sort);
+    int len = readandcount(wiretype, valuebuffer);
     switch (sort) {
-    case Ast_int64:
-        return int64_decode(len,buffer);
-    case Ast_uint64:
-        return uint64_decode(len,buffer);
-    case Ast_sint64:
-        return unzigzag64(uint64_decode(len,buffer));
-    case Ast_fixed64:
-        return fixed64_decode(buffer);
-    case Ast_sfixed64:
-        return fixed64_decode(buffer);
+    case Sort.Ast_int64:
+        return int64_decode(len, valuebuffer);
+    case Sort.Ast_uint64:
+        return uint64_decode(len, valuebuffer);
+    case Sort.Ast_sint64:
+        return unzigzag64(uint64_decode(len, valuebuffer));
+    case Sort.Ast_fixed64:
+        return fixed64_decode(8, valuebuffer);
+    case Sort.Ast_sfixed64:
+        return fixed64_decode(8, valuebuffer);
     default: break;
     }
-    throw new ASTException(AST_EFAIL);
+    throw new ASTException("Unexpected sort: " + sort);
 }
 
 double[]
-read_primitive_double_packed()
+read_primitive_packed_double(int sort)
     throws IOException
 {
     // extract the count
-    int wiretype = Ast_counted;
-    int count = readandcount(wiretype,buffer);
-    int size = Sort.Ast_double.javasize();
+    assert(sort == Sort.Ast_double);
+    int wiretype = Wiretype.Ast_counted;
+    int size = readandcount(wiretype, valuebuffer);
+    int sizeof = Sort.javasize(sort);
 
     // Pull out the values as doubles
-    int ndoubles = count/size;
+    int ndoubles = size/sizeof;
     double[] output = new double[ndoubles];
 
     // Read bytes and insert into the converter
     for(int i=0;i<ndoubles;i++) {
-	if(!read(size,buffer))
+	if(!read(valuebuffer, 0,sizeof))
 	    throw new ASTException("too few bytes");
-	output[i] = float64_decode(buffer);
+	output[i] = float64_decode(8, valuebuffer);
     }	
     return output;
 }
 
 float[]
-read_primitive_float_packed()
+read_primitive_packed_float(int sort)
     throws IOException
 {
     // extract the count
-    int wiretype = Ast_counted;
-    int count = readandcount(wiretype,buffer);
-    int size = Sort.Ast_float.javasize();
+    assert(sort == Sort.Ast_float);
+    int wiretype = Wiretype.Ast_counted;
+    int size = readandcount(wiretype, valuebuffer);
+    int sizeof = Sort.javasize(sort);
 
     // Pull out the values as floats
-    int nfloats = count/size;
+    int nfloats = size/sizeof;
     float[] output = new float[nfloats];
 
     // Read bytes and insert into the converter
     for(int i=0;i<nfloats;i++) {
-	if(!read(size,buffer))
+	if(!read(valuebuffer, 0,size))
 	    throw new ASTException("too few bytes");
-	output[i] = float32_decode(buffer);
+	output[i] = float32_decode(4, valuebuffer);
     }	
     return output;
 }
 
 boolean[]
-read_primitive_bool_packed()
+read_primitive_packed_bool(int sort)
     throws IOException
 {
     // extract the count
-    int wiretype = Ast_counted;
-    int count = readandcount(wiretype,buffer);
-    int size = Sort.Ast_bool.javasize();
+    assert(sort == Sort.Ast_bool);
+    int wiretype = Wiretype.Ast_counted;
+    int size = readandcount(wiretype, valuebuffer);
+    int sizeof = Sort.javasize(sort);
 
     // Pull out the values as bools
-    int nbools = count/size;
+    int nbools = size/sizeof;
     boolean[] output = new boolean[nbools];
 
     // Read bytes and insert into the converter
     for(int i=0;i<nbools;i++) {
-	if(!read(size,buffer))
+	if(!read(valuebuffer, 0,size))
 	    throw new ASTException("too few bytes");
-	output[i] = bool_decode(size,buffer);
+	output[i] = bool_decode(size, valuebuffer);
     }	
     return output;
 }
@@ -437,44 +630,46 @@ read_primitive_bool_packed()
 // i.e. sort= Ast_int32,Ast_sint32,Ast_fixed32,Ast_sfixed32
 
 int[]
-read_primitive_int32_packed(Sort sort)
+read_primitive_packed_int(int sort)
     throws IOException
 {
-    // extract the count; put data into buffer (except for Ast_counted)
-    int count = readandcount(Ast_counted,buffer);
-    int size = Sort.Ast_bool.javasize(); // 0 => unknown => varint
+    // extract the count; put data into valuebuffer (except for Wiretype.Ast_counted)
+    int size = readandcount(Wiretype.Ast_counted, valuebuffer);
     int len = 0;
-    IntBuffer intdata = new IntBuffer();
+    Ibuffer intdata = new Ibuffer();
+
 
 // i.e. sort= Ast_(u)int32,Ast_sint32,Ast_fixed32,Ast_sfixed32
-loop: for(;;) {
-	switch (sort.wiretype) {
-        case Ast_varint:
-            len = readvarint(buffer);
+loop: for(int avail=size;avail > 0;) {
+	switch (Sort.wiretype(sort)) {
+        case Wiretype.Ast_varint:
+            len = readvarint(valuebuffer);
 	    if(len < 0) break loop;
-	    break;	
-        case Ast_32bit:
-            len = readandcount(Ast_32bit,buffer);
+            avail -= len;
+	    break;
+        case Wiretype.Ast_32bit:
+            len = readandcount(Wiretype.Ast_32bit, valuebuffer);
 	    if(len < 0) break loop;
+            avail -= len;
 	    break;
         default:
-	    throw new ASTException("illegal wiretype: " + sort.wiretype);
+	    throw new ASTException("illegal wiretype: " + Sort.wiretype(sort));
         }
         switch (sort) {
-        case Ast_int32:
-	    intdata.add(int32_decode(len,buffer));
+        case Sort.Ast_int32:
+	    intdata.add(int32_decode(len, valuebuffer));
 	    break;			
-        case Ast_uint32:
-	    intdata.add(uint32_decode(len,buffer));
+        case Sort.Ast_uint32:
+	    intdata.add(uint32_decode(len, valuebuffer));
 	    break;			
-        case Ast_sint32:
-	    intdata.add(unzigzag32(uint32_decode(len,buffer)));
+        case Sort.Ast_sint32:
+	    intdata.add(unzigzag32(uint32_decode(len, valuebuffer)));
 	    break;			
-        case Ast_fixed32:
-	    intdata.add(fixed32_decode(buffer));
+        case Sort.Ast_fixed32:
+	    intdata.add(fixed32_decode(4, valuebuffer));
 	    break;
-        case Ast_sfixed32:
-	    intdata.add(fixed32_decode(buffer));
+        case Sort.Ast_sfixed32:
+	    intdata.add(fixed32_decode(4, valuebuffer));
 	    break;
         default: break;
         }
@@ -486,45 +681,47 @@ loop: for(;;) {
 // i.e. sort= Ast_int64,Ast_sint64,Ast_fixed64,Ast_sfixed64
 
 long[]
-read_primitive_int64_packed(Sort sort)
+read_primitive_packed_long(int sort)
     throws IOException
 {
-    // extract the count; put data into buffer (except for Ast_counted)
-    int count = readandcount(Ast_counted,buffer);
-    int size = Sort.Ast_bool.javasize(); // 0 => unknown => varint
+    // extract the count
+    int count = readandcount(Wiretype.Ast_counted, valuebuffer);
+    int size = Sort.javasize(sort); // 0 => unknown => varint
     int len = 0;
-    LongBuffer longdata = new LongBuffer();
+    Lbuffer longdata = new Lbuffer();
 
 // i.e. sort= Ast_(u)int64,Ast_sint64,Ast_fixed64,Ast_sfixed64
-loop: for(;;) {
-	switch (sort.wiretype) {
-        case Ast_varint:
-            len = readvarint(buffer);
+loop: for(int avail=size;avail > 0;) {
+	switch (Sort.wiretype(sort)) {
+        case Wiretype.Ast_varint:
+            len = readvarint(valuebuffer);
 	    if(len < 0) break loop;
-	    break;	
-        case Ast_64bit:
-            len = readandcount(Ast_64bit,buffer);
+            avail -= len;
+	    break;
+        case Wiretype.Ast_64bit:
+            len = readandcount(Wiretype.Ast_64bit, valuebuffer);
 	    if(len < 0) break loop;
+            avail -= len;
 	    break;
         default:
-	    throw new ASTException("illegal wiretype: " + sort.wiretype);
+	    throw new ASTException("illegal wiretype: " + Sort.wiretype(sort));
         }
 
         switch (sort) {
-        case Ast_int64:
-	    longdata.add(int64_decode(len,buffer));
+        case Sort.Ast_int64:
+	    longdata.add(int64_decode(len, valuebuffer));
 	    break;			
-        case Ast_uint64:
-	    longdata.add(uint64_decode(len,buffer));
+        case Sort.Ast_uint64:
+	    longdata.add(uint64_decode(len, valuebuffer));
 	    break;			
-        case Ast_sint64:
-	    longdata.add(unzigzag64(uint64_decode(len,buffer)));
+        case Sort.Ast_sint64:
+	    longdata.add(unzigzag64(uint64_decode(len, valuebuffer)));
 	    break;			
-        case Ast_fixed64:
-	    longdata.add(fixed64_decode(buffer));
+        case Sort.Ast_fixed64:
+	    longdata.add(fixed64_decode(8, valuebuffer));
 	    break;
-        case Ast_sfixed64:
-	    longdata.add(fixed64_decode(buffer));
+        case Sort.Ast_sfixed64:
+	    longdata.add(fixed64_decode(8, valuebuffer));
 	    break;
         default: break;
         }
@@ -533,103 +730,98 @@ loop: for(;;) {
 }
 
 void
-write_primitive(Sort sort, double val)
+write_primitive(int sort, double val)
     throws IOException
 {
     assert(sort == Sort.Ast_double);
-    int count = float64_encode(val,buffer);
-    write(count,buffer);
+    int count = float64_encode(val, valuebuffer);
+    write(count, valuebuffer);
 }
 
 void
-write_primitive(Sort sort, float val)
+write_primitive(int sort, float val)
     throws IOException
 {
     assert(sort == Sort.Ast_float);
-    int count = float32_encode(val,buffer);
-    write(count,buffer);
+    int count = float32_encode(val, valuebuffer);
+    write(count, valuebuffer);
 }
 
 void
-write_primitive(Sort sort, boolean val)
+write_primitive(int sort, boolean val)
     throws IOException
 {
     assert(sort == Sort.Ast_bool);
-    int count = bool_encode(val,buffer);
-    write(count,buffer);
-	throw new ASTException("write failure");
+    int count = bool_encode(val, valuebuffer);
+    write(count, valuebuffer);
 }
 
 void
-write_primitive(Sort sort, String val)
+write_primitive(int sort, String val)
         throws IOException
 {
     assert(sort == Sort.Ast_string);
     byte[] bval = val.getBytes(utf8);
     int len = bval.length;
-    int count = uint32_encode(len,buffer);
     write_size(len);
     write(len,bval);
 }
 
 void
-write_primitive(Sort sort, byte[] bval)
+write_primitive(int sort, byte[] bval)
         throws IOException
 {
     assert(sort == Sort.Ast_bytes);
     int len = bval.length;
-    int count = uint32_encode(len,buffer);
     write_size(len);
     write(len,bval);
 }
 
 void
-write_primitive(Sort sort, long val)
+write_primitive(int sort, long val)
         throws IOException
 {
     int ival = (int)(val & 0xffffffff);
     int count = 0;
     /* Write the data in proper wiretype format using the sort */
     switch (sort) {
-    case Ast_int32:
-	count = int32_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_int32:
+	count = int32_encode(ival, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_int64:
-	count = int64_encode(val,buffer);
-        write(count,buffer);
+    case Sort.Ast_int64:
+	count = int64_encode(val, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_uint32:
-	count = uint32_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_uint32:
+	count = uint32_encode(ival, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_uint64:
-	count = uint64_encode(val,buffer);
-	write_size(count);
+    case Sort.Ast_uint64:
+	count = uint64_encode(val, valuebuffer);
+	write(count, valuebuffer);
 	break;
-    case Ast_sint32:
-	count = sint32_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_sint32:
+	count = sint32_encode(ival, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_sint64:
-	count = sint64_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_sint64:
+	count = sint64_encode(val, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_enum:
-	count = int32_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_enum:
+	count = int32_encode(ival, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_fixed32: /* fall thru */
-    case Ast_sfixed32: /* fall thru */
-    case Ast_float:
-	count = fixed32_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_fixed32: /* fall thru */
+    case Sort.Ast_sfixed32: /* fall thru */
+	count = fixed32_encode(ival, valuebuffer);
+        write(count, valuebuffer);
 	break;
-    case Ast_fixed64:  /* fall thru */
-    case Ast_sfixed64: /* fall thru */
-    case Ast_double:
-	count = fixed64_encode(ival,buffer);
-        write(count,buffer);
+    case Sort.Ast_fixed64:  /* fall thru */
+    case Sort.Ast_sfixed64: /* fall thru */
+	count = fixed64_encode(val, valuebuffer);
+        write(count, valuebuffer);
 	break;
     default:
 	throw new ASTException("unexpected sort: "+sort);
@@ -637,175 +829,185 @@ write_primitive(Sort sort, long val)
 }
 
 void
-write_primitive_packed(Sort sort, double[] val)
+write_primitive_packed(int sort, double[] val)
     throws IOException
 {
     assert(sort == Sort.Ast_double);
-    write_size(val.length*getSize(Sort.Ast_double,(double)0.0));
+    if(val == null) return;
+    int size = getSizePacked(sort,val);
+    write_size(size);
     for(int i=0;i<val.length;i++)
 	write_primitive(Sort.Ast_double,val[i]);
 }
 
 void
-write_primitive_packed(Sort sort, float[] val)
+write_primitive_packed(int sort, float[] val)
         throws IOException
 {
     assert(sort == Sort.Ast_float);
-    write_size(val.length*getSize(Sort.Ast_float,(float)0.0));
+    if(val == null) return;
+    int size = getSizePacked(sort,val);
+    write_size(size);
     for(int i=0;i<val.length;i++)
 	write_primitive(Sort.Ast_float,val[i]);
 }
 
 void
-write_primitive_packed(Sort sort, boolean[] val)
+write_primitive_packed(int sort, boolean[] val)
         throws IOException
 {
     assert(sort == Sort.Ast_bool);
-    write_size(val.length*getSize(Sort.Ast_bool,true));
+    if(val == null) return;
+    int size = getSizePacked(sort,val);
+    write_size(size);
     for(int i=0;i<val.length;i++)
 	write_primitive(Sort.Ast_bool,val[i]);
 }
 
 void
-write_primitive_packed(Sort sort, int[] val)
+write_primitive_packed(int sort, int[] val)
         throws IOException
 {
-    // ugh; we need to encode into a memory buffer
+    if(val == null) return;
+    // ugh; we need to encode into a memory valuebuffer
     // to see the correct length for varints
     int count = 0;
-    abuffer.clear();
-    abuffer.setSize(val.length*Sort.MAXVARINTSIZE); // max possible size
+    varintbuffer.clear();
+    varintbuffer.setSize(val.length*Sort.MAXVARINTSIZE); // max possible size
     switch (sort) {
-    case Ast_enum:
-    case Ast_int32:
+    case Sort.Ast_enum:
+    case Sort.Ast_int32:
 	for(int i=0;i<val.length;i++) {
-	    count = int32_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+	    count = int32_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
-    case Ast_uint32:
+    case Sort.Ast_uint32:
 	for(int i=0;i<val.length;i++) {
-	    count = uint32_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+	    count = uint32_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
-    case Ast_sint32:
+    case Sort.Ast_sint32:
 	for(int i=0;i<val.length;i++) {
-	    count = sint32_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+	    count = sint32_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
-    case Ast_fixed32: /* fall thru */
-    case Ast_sfixed32: /* fall thru */
-    case Ast_float:
+    case Sort.Ast_fixed32: /* fall thru */
+    case Sort.Ast_sfixed32: /* fall thru */
+    case Sort.Ast_float:
 	for(int i=0;i<val.length;i++) {
-  	    count = fixed32_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+  	    count = fixed32_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
     default:
 	throw new ASTException("unexpected sort: "+sort);
     }
     // write the count and the data
-    int len = abuffer.getPosition();
-    byte[] data = abuffer.getBuffer();
-    count = uint32_encode(len,buffer);
-    write_size(count);
+    int len = varintbuffer.getPosition();
+    byte[] data = varintbuffer.getBuffer();
+    write_size(len);
     write(len,data);
 }
 
 void
-write_primitive_packed(Sort sort, long[] val)
+write_primitive_packed(int sort, long[] val)
         throws IOException
 {
+    if(val == null) return;
     int count = 0;
 
-    abuffer.clear();
-    abuffer.setSize(val.length*Sort.MAXVARINTSIZE); // max possible size
+    varintbuffer.clear();
+    varintbuffer.setSize(val.length*Sort.MAXVARINTSIZE); // max possible size
 
     switch (sort) {
-    case Ast_enum:
-    case Ast_int64:
+    case Sort.Ast_enum:
+    case Sort.Ast_int64:
 	for(int i=0;i<val.length;i++) {
-	    count = int64_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+	    count = int64_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
-    case Ast_uint64:
+    case Sort.Ast_uint64:
 	for(int i=0;i<val.length;i++) {
-	    count = uint64_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+	    count = uint64_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
-    case Ast_sint64:
+    case Sort.Ast_sint64:
 	for(int i=0;i<val.length;i++) {
-	    count = sint64_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+	    count = sint64_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
-    case Ast_fixed64: /* fall thru */
-    case Ast_sfixed64: /* fall thru */
-    case Ast_float:
+    case Sort.Ast_fixed64: /* fall thru */
+    case Sort.Ast_sfixed64: /* fall thru */
+    case Sort.Ast_float:
 	for(int i=0;i<val.length;i++) {
-  	    count = fixed64_encode(val[i],buffer);
-	    abuffer.add(buffer,0,count);
+  	    count = fixed64_encode(val[i], valuebuffer);
+	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
     default:
 	throw new ASTException("unexpected sort: "+sort);
     }
     // write the count and the data
-    int len = abuffer.getPosition();
-    byte[] data = abuffer.getBuffer();
-    count = uint32_encode(len,buffer);
-    write_size(count);
+    int len = varintbuffer.getPosition();
+    byte[] data = varintbuffer.getBuffer();
+    write_size(len);
     write(len,data);
 }
 
 /* Read into Repeated field */
 double[]
-repeat_append(Sort sort, double newval, double[] list)
+repeat_append(int sort, double newval, double[] list)
 {
     if(list == null) {list = new double[1];}
     else {
 	double[] newlist = new double[list.length+1];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
 }
 
 float[]
-repeat_append(Sort sort, float newval, float[] list)
+repeat_append(int sort, float newval, float[] list)
 {
     if(list == null) {list = new float[1];}
     else {
 	float[] newlist = new float[list.length+1];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
 }
 
 boolean[]
-repeat_append(Sort sort, boolean newval, boolean[] list)
+repeat_append(int sort, boolean newval, boolean[] list)
 {
     if(list == null) {list = new boolean[1];}
     else {
 	boolean[] newlist = new boolean[list.length+1];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
 }
 
 int[]
-repeat_append(Sort sort, int newval, int[] list)
+repeat_append(int sort, int newval, int[] list)
 {
     if(list == null) {list = new int[1];}
     else {
 	int[] newlist = new int[list.length+1];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
@@ -813,42 +1015,55 @@ repeat_append(Sort sort, int newval, int[] list)
 
 
 long[]
-repeat_append(Sort sort, long newval, long[] list)
+repeat_append(int sort, long newval, long[] list)
 {
     if(list == null) {list = new long[1];}
     else {
 	long[] newlist = new long[list.length+1];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
 }
 
 String[]
-repeat_append(Sort sort, String newval, String[] list)
+repeat_append(int sort, String newval, String[] list)
 {
     if(list == null) {list = new String[1];}
     else {
 	String[] newlist = new String[list.length+1];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
 }
 
 byte[][]
-repeat_append(Sort sort, byte[] newval, byte[][] list)
+repeat_append(int sort, byte[] newval, byte[][] list)
 {
     if(list == null) {list = new byte[1][];}
     else {
 	byte[][] newlist = new byte[list.length+1][];
 	System.arraycopy(list,0,newlist,0,list.length);
+        list = newlist;
     }
     list[list.length-1] = newval;
     return list;
 }
 
-} /*class ASTRuntime*/
+// Special handling for messages and enums
+Object
+repeat_extend(Object list, java.lang.Class klass)
+{
+    int len = (list==null?0:Array.getLength(list));
+    Object newlist = Array.newInstance(klass,len+1);
+    if(len > 0) System.arraycopy(list,0,newlist,0,len);
+    list = newlist;
+    return list;
+}
 
+} /*class ASTRuntime*/
 
 

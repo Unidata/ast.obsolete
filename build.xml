@@ -14,7 +14,7 @@
 <property name="src.dir"	     location="src"/>
 <property name="src.main.dir"	     location="${src.dir}/main"/>
 <property name="src.main.java.dir"   location="${src.main.dir}/java"/>
-<property name="src.main.java.ast.dir" value="${src.main.dir}/java/unidata/protobuf/ast"/>
+<property name="src.main.java.ast.dir" value="${src.main.dir}/java/unidata/ast"/>
 <property name="src.main.java.ast.compiler.dir"   location="${src.main.java.ast.dir}/compiler"/>
 
 <!-- Build Directories -->
@@ -36,7 +36,7 @@
 
 <!-- jar files -->
 <property name="astjar" value="ast.jar"/>
-<property name="main.class" value="unidata.protobuf.ast.compiler.Main"/>
+<property name="main.class" value="unidata.ast.compiler.Main"/>
 
 <property name="distjar" value="unidata.jar"/>
 

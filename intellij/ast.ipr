@@ -175,7 +175,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ast.iml" filepath="$PROJECT_DIR$/ast.iml" />
-      <module fileurl="file://$PROJECT_DIR$/intellij/ast.iml" filepath="$PROJECT_DIR$/intellij/ast.iml" />
     </modules>
   </component>
   <component name="ProjectResources">

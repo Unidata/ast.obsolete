@@ -1,18 +1,12 @@
-package Bytetests;
+package unidata.ast.test;
 
 // Test string and byte valued fields
 
-message BytesRequired {
-    required string f_string = 1;
-    required bytes f_bytes = 2;
-}
-
-message BytesOptional {
-    optional string f_string = 1 [DEFAULT="hello"];
-    optional bytes f_bytes = 2;
-}
-
-message BytesRepeated {
-    repeated string f_string = 1;
-    repeated bytes f_bytes = 2 [packed=true];
+message Bytetest {
+    required string rqstring = 1;
+    required bytes rqbytes = 2;
+    optional string opstring = 3 [DEFAULT="hello"];
+    optional bytes opbytes = 4;
+    repeated string rpstring = 5;
+    repeated bytes rpbytes = 6;
 }

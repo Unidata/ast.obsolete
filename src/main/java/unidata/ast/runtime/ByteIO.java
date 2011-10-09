@@ -24,27 +24,22 @@ public
 ByteIO() // only if writing
     throws IOException
 {
-    this(IOmode.Ast_write,new ByteArrayOutputStream());
+    this(new ByteArrayOutputStream());
 }
 
 public
-ByteIO(IOmode mode, Object stream)
+ByteIO(Object stream)
     throws IOException
 {
-    super(mode);    
-    switch (mode) {
-    case Ast_read:
-        if(stream == null || !(stream instanceof InputStream))
-	    throw new IOException("Byteio: no InputStream specified");
+    super();
+    if(stream == null)
+        throw new IOException("ByteIO: no stream specified");
+    if(stream instanceof InputStream)
 	setStream((InputStream)stream);
-	break;
-    case Ast_write:
-        if(stream == null || !(stream instanceof OutputStream))
-	    throw new IOException("Byteio: no OutputStream specified");
+    else if(stream instanceof OutputStream)
 	setStream((OutputStream)stream);
-	break;
-    }
 }
+
 
 }
 

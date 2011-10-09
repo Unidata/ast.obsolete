@@ -1,20 +1,21 @@
 W=-WdT
 D=
 
-#TESTS=Primtests.proto Bytetests.proto Msgtests.proto Enumtests.proto
-TESTS=Primtests.proto
+TESTS=Primtests.proto Msgtests.proto Enumtests.proto Bytetests.proto
 
 RTSRC=
 
+MAIN=TestAst
+
 TESTJ=${TESTS:%.proto=%.java}
-TESTSRC=Testast.java ${TESTJ}
+TESTSRC=${MAIN}.java ${TESTJ}
 CRSRC=testcr.c ast_curl.c ncStream.c nccr.c
 
 PARSER=ProtobufParser.java
 
 GRAMMAR=protobuf.y
 
-MAIN=unidata.protobuf.compiler.Main
+JARMAIN=unidata.protobuf.compiler.Main
 
 JAR=ast.jar
 JARDIR=f:/git/ast/target
@@ -62,7 +63,7 @@ LIBS=`${CURLCONFIG} --libs`
 INCL=`${CURLCONFIG} --cflags`
 
 c:
-	gcc -static ${CFLAGS} -o testast -I. ${RTSRC} ${TESTSRC}
+	gcc -static ${CFLAGS} -o ${MAIN} -I. ${RTSRC} ${TESTSRC}
 
 cr:
 	java -jar ${JAR} ${W} -I. test.proto
@@ -84,10 +85,15 @@ sync synch::
 	    'cp' -f ../../../$$a . ; \
 	done
 
+clean::
+	rm -fr classes
+	rm -f ${TESTJ}
+
 jar::
 	cd f:/git/ast ; ant all
 
 test::
-	javac -classpath ".;${JARDIR}/${JAR}" ${TESTSRC}
-
-#	java -cp ".;${JARDIR}/${JAR}" 
+	rm -fr classes
+	mkdir classes
+	javac -d classes -classpath "${JARDIR}/${JAR}" ${TESTSRC}
+	java -cp "classes;${JARDIR}/${JAR}" unidata.ast.test.${MAIN}

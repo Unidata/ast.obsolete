@@ -46,7 +46,7 @@ import static unidata.ast.compiler.Debug.*;
  *for generating C code.
  */
 
-public class CSemantics extends Semantics
+public class CSemantics extends unidata.ast.compiler.Semantics
 {
 
 //////////////////////////////////////////////////
@@ -77,6 +77,7 @@ initialize(AST.Root root, String[] argv, ASTFactory factory)
     odefs.add(new OptionDef("c_file", "string"));
     odefs.add(new OptionDef("include", "string"));
     odefs.add(new OptionDef("config_h", "bool"));
+    odefs.add(new OptionDef("cast", "string")); // pseudo-supertype
 
     return true;
 }

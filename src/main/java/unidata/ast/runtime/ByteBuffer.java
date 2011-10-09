@@ -7,7 +7,7 @@
 
 package unidata.ast.runtime;
 
-// Wrapper class to provide expandable byte buffer
+// Wrapper class to provide expandable byte valuebuffer
 
 class ByteBuffer
 {
@@ -51,7 +51,7 @@ class ByteBuffer
 	    byte[] newbuf = new byte[pos*2+length];
 	    System.arraycopy(buffer,0,newbuf,0,pos);
         }
-	System.arraycopy(buffer,pos,bytes,offset,length);
+	System.arraycopy(bytes,offset,buffer,pos,length);
 	pos += length;
     }
 

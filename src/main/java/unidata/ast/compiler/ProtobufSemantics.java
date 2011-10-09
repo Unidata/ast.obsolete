@@ -70,18 +70,16 @@ initialize(AST.Root root, String[] argv, ASTFactory factory)
 
     // Add the predefined optiondefs; user defined options
     // will have already been added by parser
-    odefs.add(new OptionDef("java_package", "string"));
-    odefs.add(new OptionDef("java_outer_classname", "string"));
     odefs.add(new OptionDef("optimize_for", "string"));
     odefs.add(new OptionDef("packed", "bool"));
     odefs.add(new OptionDef("cc_generic_services", "bool"));
-    odefs.add(new OptionDef("java_generic_services", "bool"));
     odefs.add(new OptionDef("py_generic_services", "bool"));
     odefs.add(new OptionDef("deprecated", "bool"));
     odefs.add(new OptionDef("compile", "string"));
     odefs.add(new OptionDef("declare", "bool"));
     odefs.add(new OptionDef("extends", "string"));
     odefs.add(new OptionDef("DEFAULT", "string")); // but see maptions() below
+    odefs.add(new OptionDef("encoding", "string"));
 
     return true;    
 }
@@ -402,6 +400,7 @@ setpackagelink(AST.Root root)
     for (AST.File f : root.getFileSet()) {
         AST.Package p = f.getFilePackage();
         if (p == null) continue;
+	f.setPackage(p); // reverse the link
         for (AST ast : f.getNodeSet()) {
             ast.setPackage(p);
         }
@@ -1019,7 +1018,30 @@ mapoptions(AST.Root root)
 		break;
 	    }
         }
-    }	
+    }
+
+    // Now, move the value of selected options into the AST tree
+    for (AST node : allnodes) {
+        if(node.getSort() == Sort.FIELD) {
+	    AST.Field field = (AST.Field)node;
+            Object tf = field.optionLookup("packed");
+	    if(tf == null) continue;
+	    Sort sort = field.getType().getSort();
+  	    AST.PrimitiveSort psort = null;
+	    if(sort == Sort.PRIMITIVETYPE)
+                psort = ((AST.PrimitiveType)field.getType()).getPrimitiveSort();
+	    // validate that this field can be packed
+	    if(sort == Sort.PRIMITIVETYPE
+	       && psort != AST.PrimitiveSort.STRING
+	       && psort != AST.PrimitiveSort.BYTES) {
+                    field.setIsPacked("true".equals(tf));
+	    } else if(field.getType().getSort() == Sort.ENUM) {
+                field.setIsPacked("true".equals(tf));
+            } else {
+	        return semerror(field,"Type cannot be packed: "+field.getType().toString()); // complain
+	    }
+	}
+    }
     return true;
 }
 

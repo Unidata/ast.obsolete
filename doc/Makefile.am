@@ -15,7 +15,7 @@ DISTCLEANFILES = Makefile
 # List of files to remove for a maintainer-clean
 MAINTAINERCLEANFILES =
 
-EXTRA_DIST += astinternals.html astuserman.html astman.html
+EXTRA_DIST += astinternals.html cmanual.html javamanual.html
 
 
 

@@ -1,4 +1,4 @@
-package Enumtests;
+package unidata.ast.test;
 
 // Goal is to test enum fields (and also nesting)
 
@@ -14,6 +14,5 @@ message Enumtest {
     required Testenum renum = 1;
     optional Testenum oenum = 2;
     repeated Testenum penum = 3;
-    repeated Testenum ppenum = 4 [packed=true];
 }
 

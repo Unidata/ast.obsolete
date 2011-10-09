@@ -288,7 +288,8 @@ public List<AST.OptionDef> getOptionDefs()
 public AST.OptionDef getOptionDef(String key)
 {
     for(OptionDef def: this.optiondefs) {
-        if(def.name.equals(key)) return def;
+        if(def.name.equals(key))
+            return def;
     }
     return null;
 }

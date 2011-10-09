@@ -78,7 +78,7 @@ public class Main
     {
 	int c;
 
-	String options = "-:D:I:L:W:V"; // update usage() if changed
+	String options = "-:D:I:L:W:VH"; // update usage() if changed
 	// In case we ever need to use long options
 	StringBuilder longopttag = new StringBuilder();
 	LongOpt[] LongOptions = new LongOpt[]{
@@ -130,10 +130,13 @@ public class Main
 	    case 'V':
 		optionVerbose = true;		
 		break;
+	    case 'H': // help
+	       usage();
+	       System.exit(0);
 	    case ':':
-	        usage("Command line option requires argument "+g.getOptopt());
+	        fatal("Command line option requires argument "+g.getOptopt());
 	    case '?':
-	        usage("Illegal cmd line option: "+g.getOptopt());
+	        fatal("Illegal cmd line option: "+g.getOptopt());
 	    default: break; // ignore
 	    }
         }
@@ -148,12 +151,15 @@ public class Main
 	    }
         }
         if(classLanguageTag == null) {
-	    usage("Unknown language: "+optionLanguage);
+	    fatal("Unknown language: "+optionLanguage);
         }
 
+        // Ensure that the language has only first letter capitalized
+        classLanguageTag =    classLanguageTag.substring(0,1).toUpperCase()
+                            + classLanguageTag.substring(1).toLowerCase();
 
 	if(arglist.size() == 0) {
-	    usage("No input file specified");
+	    fatal("No input file specified");
 	}
 
 	String rawfilename = arglist.get(0);
@@ -161,11 +167,11 @@ public class Main
 	String inputfilename = AuxFcns.locatefile(rawfilename,includePaths);
 
 	if(inputfilename == null) {
-	    usage("Cannot locate input file: "+rawfilename);
+	    fatal("Cannot locate input file: "+rawfilename);
 	}
 	File inputfile = new File(inputfilename);
 	if(!inputfile.canRead()) {
-	    usage("Cannot read input file: "+inputfile.toString());
+	    fatal("Cannot read input file: "+inputfile.toString());
 	}
 	FileReader rdr = new FileReader(inputfile);
 
@@ -176,7 +182,7 @@ public class Main
 
 	boolean pass = parser.parse(rawfilename,rdr);
 	if(!pass) {
-	    usage("Parse failed");
+	    fatal("Parse failed");
 	}
 
 	// Compute the post-getopt argv.
@@ -190,8 +196,9 @@ public class Main
 	// Try to locate the language specific Semantics checking class.
 	String semanticsclassname = DFALTPACKAGE
 				    + "."
-				    + classLanguageTag
-                + "."
+				    + classLanguageTag.toLowerCase()
+                                    + "."
+                                    + classLanguageTag
 				    + "Semantics";
         Semantics langsemantics = null;
         try {
@@ -201,8 +208,9 @@ public class Main
 
 	String generatorclassname = DFALTPACKAGE
 				    + "."
-				    + classLanguageTag
+				    + classLanguageTag.toLowerCase()
                                     + "."
+                                    + classLanguageTag
 				    + "Generator";
 	// Try to locate the language specific Generator class
 	Generator generator = null;
@@ -210,7 +218,7 @@ public class Main
             Class generatorclass = Class.forName(generatorclassname);
 	    generator = (Generator)generatorclass.newInstance();
         } catch (ClassNotFoundException e) {
-	    usage("Generator class not found: "+generatorclassname);
+	    fatal("Generator class not found: "+generatorclassname);
         }
 
 	// Semantic Processing
@@ -224,34 +232,39 @@ public class Main
 
 	// Invoke all the initializers
 	if(!sem.initialize(parser.getAST(),finalargv,factory)) {
-	    usage("Protobuf semantic initialization failure.");
+	    fatal("Protobuf semantic initialization failure.");
 	}
         if(!langsemantics.initialize(parser.getAST(),finalargv,factory)) {
-            usage(optionLanguage+": semantic initialization failure.");
+            fatal(optionLanguage+": semantic initialization failure.");
         }
 
         // Do semantic processing
 	pass = sem.process(parser.getAST());
 	if(!pass) {
-	    usage("Protobuf semantic error detected.");
+	    fatal("Protobuf semantic error detected.");
 	}
 
 	pass = langsemantics.process(parser.getAST());
 	if(!pass) {
-	    usage(optionLanguage+": semantic errors detected");
+	    fatal(optionLanguage+": semantic errors detected");
 	}
 
         pass = generator.generate(parser.getAST(),finalargv);
         if(!pass) {
-                usage(optionLanguage+": code generation errors detected");
+            fatal(optionLanguage+": code generation errors detected");
         }
-
-
     }
 
-    static void usage(String msg)
+    static void fatal(String msg)
     {
 	System.err.println(msg);
+	System.err.println("Use -H flag for help");
+	System.err.flush();
+        System.exit(1);
+    }
+
+    static void usage()
+    {
 	System.err.print(
 "usage: java -jar ast.jar <options>*\n"
 +"where the options are:\n"
@@ -269,6 +282,5 @@ public class Main
 +"                   'D' -- check for duplicates\n"
 	);
 	System.err.flush();
-        System.exit(1);
     }    
 }

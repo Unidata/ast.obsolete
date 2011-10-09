@@ -80,7 +80,7 @@ import gnu.getopt.Getopt;
 import java.util.*;
 import java.io.*;
 
-public class CGenerator extends Generator
+public class CGenerator extends unidata.ast.compiler.Generator
 {
 
 //////////////////////////////////////////////////
@@ -425,18 +425,18 @@ generate_messagestruct(AST.Message msg, Printer printer) throws Exception
     // If the "declare" option is set, then do nothing
     if(AuxFcns.getbooleanvalue((String)msg.optionLookup("declare")))
 	return;
-    // See if a supertype is specified
-    String optextends = (String)msg.optionLookup("extends");
-    String supertype = null;
-    String superfield = null;
-    if(optextends != null && optextends.trim().length() > 0) {
-	optextends = optextends.trim();
-	String[] pieces = optextends.split("[ \t]+");
-	supertype = pieces[0];
+    // See if a pseudo-supertype is specified
+    String optcast = (String)msg.optionLookup("cast");
+    String casttype = null;
+    String castfield = null;
+    if(optcast != null && optcast.trim().length() > 0) {
+	optcast = optcast.trim();
+	String[] pieces = optcast.split("[ \t]+");
+	casttype = pieces[0];
 	if(pieces.length > 1)
-	    superfield = pieces[1];
+	    castfield = pieces[1];
 	else
-	    superfield = supertype.toLowerCase();
+	    castfield = casttype.toLowerCase();
     }
 
     Annotation a = (Annotation)msg.getAnnotation();
@@ -446,8 +446,8 @@ generate_messagestruct(AST.Message msg, Printer printer) throws Exception
     // generate the supertype as the first element in the struct
     if(supertype != null)
         printer.printf("%s %s;\n",
-		converttocname(supertype),
-		converttocname(superfield));
+		converttocname(casttype),
+		converttocname(castfield));
     // Generate the fields
     for(AST.Field field: msg.getFields()) {
 	String star = (isPrimitive(field) || isEnum(field) ? "" : "*");
