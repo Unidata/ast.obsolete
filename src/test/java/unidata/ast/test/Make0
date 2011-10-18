@@ -96,4 +96,4 @@ test::
 	rm -fr classes
 	mkdir classes
 	javac -d classes -classpath "${JARDIR}/${JAR}" ${TESTSRC}
-	java -cp "classes;${JARDIR}/${JAR}" unidata.ast.test.${MAIN}
+	java -Dcoding=xdr -cp "classes;${JARDIR}/${JAR}" unidata.ast.test.${MAIN}

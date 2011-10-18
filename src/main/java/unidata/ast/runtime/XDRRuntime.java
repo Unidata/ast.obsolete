@@ -38,29 +38,38 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-package unidata.ast.runtime.xdr;
+package unidata.ast.runtime;
 
-import static unidata.ast.runtime.*;
-import static unidata.ast.runtime.ASTRuntime.*;
+import java.io.IOException;
 
-/*
-Procedures that are never called
-directly by generated code
-are placed in this class
-as static methods.
-*/
+import static unidata.ast.runtime.ASTRuntime.Wiretype.Ast_32bit;
+import static unidata.ast.runtime.ASTRuntime.Wiretype.Ast_counted;
+import static unidata.ast.runtime.ASTRuntime.Wiretype.Ast_varint;
 
-abstract public class Internal
+public class XDRRuntime extends ASTRuntime
 {
 
 //////////////////////////////////////////////////
 
+public XdrCoding()
+{
+    super();
+}
+
+XdrCoding(AbstractIO io)
+{
+    super(io);
+}
+
+
+static protected class Encoding
+{
 
 /* Return the number of bytes required to store the
    tag for the field, which includes 3 bits for
    the wire-type, and a single bit that denotes the end-of-tag.
 */
-static public int
+int
 encode_tag(int wiretype, int fieldno, byte[] buffer)
 {
     int key = (wiretype | (fieldno << 3));
@@ -77,7 +86,7 @@ encode_tag(int wiretype, int fieldno, byte[] buffer)
    for unsigned ints.
 */
 
-static public int
+int
 uint32_encode(int value, byte[] out)
 {
     return fixed32_encode(value,out);
@@ -88,7 +97,7 @@ uint32_encode(int value, byte[] out)
    twos-complement 64-bit integers.
 */
 
-static public int
+int
 int32_encode(int value, byte[] out)
 {
   if(value >= 0)
@@ -101,7 +110,7 @@ int32_encode(int value, byte[] out)
 Pack a 32-bit integer in zigwag encoding.
 */
 
-static public int
+int
 sint32_encode(int value, byte[] out)
 {
     return fixed32_encode(value,out);
@@ -110,13 +119,13 @@ sint32_encode(int value, byte[] out)
 /* Pack a 64-bit unsigned integer that fits in a 64-bit uint,
    using base-128 encoding. */
 
-static public int
+int
 int64_encode(long value, byte[] out)
 {
     return uint64_encode(value,out);
 }
 
-static public int
+int
 uint64_encode(long value, byte[] out)
 {
     return fixed64_encode(value, out);
@@ -126,17 +135,17 @@ uint64_encode(long value, byte[] out)
    the size of the packed output.  (Max returned value is 10)
 */
 
-static public int
+int
 sint64_encode(long value, byte[] out)
 {
   return uint64_encode(value, out);
 }
 
-/* Pack a 32-bit value, little-endian.  Used for fixed32,
+/* Pack a 32-bit value; Used for fixed32,
    sfixed32, float
 */
 
-static public int
+int
 fixed32_encode(int value, byte[] out)
 {
   // xdr uses big endian
@@ -153,7 +162,7 @@ fixed32_encode(int value, byte[] out)
 
 /* Protobuf writes little endian */
 
-static public int
+int
 fixed64_encode(long value, byte[] out)
 {
   out[7] = (byte)((value)&0xff);
@@ -174,20 +183,20 @@ fixed64_encode(long value, byte[] out)
 /* XXX: perhaps on some platforms "*out = !!value" would be
    a better impl, b/c that is idiotmatic c++ in some stl impls. */
 
-static public int
+int
 bool_encode(boolean value, byte[] out)
 {
     return fixed32_encode((value ? 1 : 0),out);
 }
 
-static public int
+int
 float32_encode(float value, byte[] out)
 {
    int i = Float.floatToIntBits(value);
    return fixed32_encode(i,out);
 }
 
-static public int
+int
 float64_encode(double value, byte[] out)
 {
    long l = Double.doubleToLongBits(value);
@@ -196,32 +205,44 @@ float64_encode(double value, byte[] out)
 
 
 /* Decode a 32 bit varint */
-static public int
+int
 uint32_decode(int len, byte[] data)
 {
     return fixed32_decode(len,data);
 }
 
-static public int
+int
 int32_decode(int len, byte[] data)
 {
     return uint32_decode(len, data);
 }
 
 /* Decode possibly 64-bit varint*/
-static public long
+long
 uint64_decode(int len, byte[] data)
 {
     return fixed64_decode(len,data);
 }
 
-static public long
+long
 int64_decode(int len, byte[] data)
 {
   return uint64_decode(len, data);
 }
 
-static public int
+int
+sint32_decode(int value, byte[] out)
+{
+    return fixed32_decode(value,out);
+}
+
+long
+sint64_decode(int value, byte[] out)
+{
+    return fixed64_decode(value,out);
+}
+
+int
 fixed32_decode(int len, byte[] data)
 {
   int rv = (
@@ -233,7 +254,7 @@ fixed32_decode(int len, byte[] data)
   return rv;
 }
 
-static public long
+long
 fixed64_decode(int len, byte[] data)
 {
   long rv = 0;
@@ -248,31 +269,25 @@ fixed64_decode(int len, byte[] data)
   return rv;
 }
 
-static public boolean
+boolean
 bool_decode(int len, byte[] data)
 {
     int i = fixed32_decode(len,data);
     return (i==0? false : true);
 }
 
-static public double
+double
 float64_decode(int len, byte[] buffer)
 {
    long ld = fixed64_decode(len, buffer);
    return Double.longBitsToDouble(ld);
 }
 
-static public float
+float
 float32_decode(int len, byte[] buffer)
 {
    int i = fixed32_decode(len, buffer);
    return Float.intBitsToFloat(i);
-}
-
-static public int
-getTagSize(int tag)
-{
-  return uint32_size(tag);
 }
 
 /* Return the number of bytes required to store
@@ -280,7 +295,7 @@ getTagSize(int tag)
    in xdr encoding.
 */
 
-static public int
+int
 uint32_size(int value)
 {
     return 4;
@@ -289,7 +304,7 @@ uint32_size(int value)
 /* Return the number of bytes required to store
    a variable-length signed integer that fits in 32-bit int
    in base-128 encoding. */
-static public int
+int
 int32_size(int v)
 {
   return uint32_size(v);
@@ -298,7 +313,7 @@ int32_size(int v)
 /* Return the number of bytes required to store
    a variable-length unsigned integer that fits in 64-bit uint
    in base-128 encoding. */
-static public int
+int
 uint64_size(long value)
 {
     return 8;
@@ -308,7 +323,7 @@ uint64_size(long value)
    a variable-length unsigned integer that fits in 64-bit int
    in base-128 encoding.
 */
-static public int
+int
 int64_size(long v)
 {
   return uint64_size(v);
@@ -319,7 +334,7 @@ int64_size(long v)
    converted to unsigned via the zig-zag algorithm,
    then packed using base-128 encoding. */
 
-static public int
+int
 sint32_size(int v)
 {
   return uint32_size(v);
@@ -330,11 +345,38 @@ sint32_size(int v)
    a variable-length signed integer that fits in 64-bit int,
    converted to unsigned via the zig-zag algorithm,
    then packed using base-128 encoding. */
-static public int
+int
 sint64_size(long v)
 {
   return uint64_size(v);
 }
 
-
+//////////////////////////////////////////////////
+// These functions need access to the io stream
+int
+readwiretype(int wiretype, byte[] buffer, AbstractIO io)
+    throws IOException
+{
+    int count = 0;
+    switch (wiretype) {
+    case Ast_varint:
+    case Ast_32bit:
+	count = 4;
+        if(!io.read(buffer, 0,4)) count = -1;
+	break;
+    case ASTRuntime.Wiretype.Ast_64bit:
+	count = 8;
+        if(!io.read(buffer, 0,8)) count = -1;
+	break;
+    case Ast_counted: /* get the count */
+        int len = readwiretype(Ast_varint,buffer,io);
+	count = uint32_decode(len,buffer);
+	break;
+    default:
+	throw new ASTException("Unexpected wiretype: "+wiretype);
+    }
+    return count;
 }
+} // class Encoding
+
+} // class XDRRuntime

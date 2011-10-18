@@ -79,7 +79,6 @@ initialize(AST.Root root, String[] argv, ASTFactory factory)
     odefs.add(new OptionDef("declare", "bool"));
     odefs.add(new OptionDef("extends", "string"));
     odefs.add(new OptionDef("DEFAULT", "string")); // but see maptions() below
-    odefs.add(new OptionDef("encoding", "string"));
 
     return true;    
 }

@@ -443,8 +443,8 @@ generate_messagestruct(AST.Message msg, Printer printer) throws Exception
     printer.blankline();
     printer.printf("struct %s {\n",converttocname(msg.getName()));
     printer.indent();
-    // generate the supertype as the first element in the struct
-    if(supertype != null)
+    // generate the casttype as the first element in the struct
+    if(casttype != null)
         printer.printf("%s %s;\n",
 		converttocname(casttype),
 		converttocname(castfield));

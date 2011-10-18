@@ -77,6 +77,8 @@ public int
 getSizePacked(int sort, double[] val)
 {return rt.getSizePacked(sort,val);}
 
+public int getMessageSize(int size) throws ASTException
+{return rt.getMessageSize(size);}
 
 public int getTagSize(int sort, int fieldno) throws ASTException
 {return rt.getTagSize(sort, fieldno);}
