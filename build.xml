@@ -89,6 +89,9 @@
 	deprecation="${compile.deprecation}"
 	srcdir="${src.main.java.ast.dir}">
 	<include name="**/*.java"/>
+	<exclude name="**/ckp1/*"/>
+	<exclude name="**/ckp2/*"/>
+	<exclude name="**/ckp3/*"/>
     </javac>
 </target>
 

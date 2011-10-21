@@ -11,13 +11,17 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.lang.reflect.Array;
 
+
 /**
- * ASTRuntime provides the methods needed by
- * generated code. Its subtypes will implement
- * specific encodings such as Protobuf or XDR.
+ * ASTRuntime provides access to the procedures used by
+ * generated code.
  */
-abstract public class ASTRuntime
+
+public class ASTRuntime
 {
+
+//////////////////////////////////////////////////
+// Common constants used in the generated code
 
 /**
  * Simulate all enums as integer within static classes.
@@ -51,31 +55,6 @@ static public class Sort
     static public final int MAXTYPESIZE = 16;
     static public final int MAXVARINTSIZE = 10;
 
-    static public int javasize(int sort)
-    {
-	switch (sort) {
-        case Ast_float: case Ast_fixed32: case Ast_sfixed32: case Ast_enum: return 4;
-        case Ast_double: case Ast_fixed64: case Ast_sfixed64: return 8;
-        case Ast_bool: return 1;
-	default: break;
-	}
-	return 0;
-    }
-
-    static public int wiretype(int sort)
-    {
-	switch (sort) {
-	case Ast_float: case Ast_fixed32: case Ast_sfixed32:
-	    return Wiretype.Ast_32bit;
-	case Ast_double: case Ast_fixed64: case Ast_sfixed64:
-	    return Wiretype.Ast_64bit;
-	case Ast_string: case Ast_bytes: case Ast_message:
-	    return Wiretype.Ast_counted;
-	default:
-	}
-	return Wiretype.Ast_varint;
-    }
-
 } /*Sort*/
 
 static public class Wiretype
@@ -98,9 +77,35 @@ static public class Fieldmode {
 static public final Charset utf8 = Charset.forName("utf-8");
 
 //////////////////////////////////////////////////
+// Static fields and methods
+
+static final String DFALTPACKAGE = "unidata.ast.runtime";
+
+
+//////////////////////////////////////////////////
+// Define enum of known encoding systems; each
+// enum also defines the class implementing it.
+
+public enum Encoder {
+    Protobuf("ProtobufEncoding"),
+    XDR("XDREncoding");
+    private final String classname;
+    Encoder(String classname) {this.classname = classname;}
+    public String getClassName()   { return classname; }
+    public static Encoder getEncoder(String name)
+    {
+	if(XDR.name().equalsIgnoreCase(name)) return XDR;
+	else if(Protobuf.name().equalsIgnoreCase(name)) return Protobuf;
+	return null;
+    }
+}
+
+//////////////////////////////////////////////////
 // Instance fields
 
 AbstractIO io = null;
+
+Encoding encoder = null;
 
 //////////////////////////////////////////////////
 // Constructor(s)
@@ -108,12 +113,25 @@ AbstractIO io = null;
 public ASTRuntime()
     throws ASTException
 {
+    this(Encoder.Protobuf,null);
 }
 
 public ASTRuntime(AbstractIO io)
         throws ASTException
 {
-    this();
+    this(Encoder.Protobuf,io);
+}
+
+public ASTRuntime(Encoder encoding)
+        throws ASTException
+{
+    this(encoding,null);
+}
+
+public ASTRuntime(Encoder encoding, AbstractIO io)
+        throws ASTException
+{
+    setEncoding(encoding);
     setIO(io);
 }
 
@@ -124,6 +142,8 @@ public void
 setIO(AbstractIO io)
 {
     this.io = io;
+    if(encoder != null && io != null)
+	encoder.setIO(io);
 }
 
 /* Reclaim a runtime instance  */
@@ -135,119 +155,233 @@ close()
 }
 
 //////////////////////////////////////////////////
-// Wrappers for io.read and io.write  etc
+// The Encoding is used to find (by reflection)
+// the name of the encoding class
+
+public void
+setEncoding(Encoder coder)
+    throws ASTException
+{
+    ClassLoader loader = ASTRuntime.class.getClassLoader();
+
+   // Try to locate the encoder class
+   String encodingclassname = DFALTPACKAGE
+				    + "."
+				    + coder.getClassName()
+				    ;
+    Encoding encoder = null;
+    Class encodingclass = null;
+    try {
+        encodingclass = Class.forName(encodingclassname);
+    } catch (ClassNotFoundException e) {
+	throw new ASTException("Class not found: "+encodingclassname);
+    }
+    try {
+	encoder = (Encoding)encodingclass.newInstance();
+    } catch (Exception e) {
+	throw new ASTException("Could not create encoder instance: "+encodingclassname);
+    }
+    if(io != null)
+        encoder.setIO(io);
+    this.encoder = encoder;
+}
+
+//////////////////////////////////////////////////
+// Implement by delegation all the abstract methods
+// of Encoding class
+//////////////////////////////////////////////////
 
 boolean
 read(byte[] buf, int offset, int len) throws IOException
-{
-    return io.read(buf, offset,len);
-}
+{return encoder.read(buf, offset, len);}
 
 void
 write(int len, byte[] buf) throws IOException
-{
-    io.write(len,buf);
-}
+{encoder.write(len, buf);}
 
 void
-mark(int avail)
-    throws IOException
-{
-    io.mark(avail);    
-}
+mark(int avail) throws IOException
+{encoder.mark(avail);}
+
+void
+unmark() throws IOException
+{encoder.unmark();}
 
 //////////////////////////////////////////////////
 /* Given an unknown field, skip past it */
 
-abstract void skip_field(int wiretype, int fieldno) throws IOException;
+public void skip_field(int wiretype, int fieldno) throws IOException
+{encoder.skip_field(wiretype, fieldno);}
 
 //////////////////////////////////////////////////
 /* Procedure to calulate size of a value;
    note that this is the size of an actual
    value.
  */
+public int getSize(int sort, float val)
+{return encoder.getSize(sort, val);}
 
-abstract int getSize(int sort, float val);
-abstract int getSize(int sort, double val);
-abstract int getSize(int sort, boolean val);
-abstract int getSize(int sort, String val);
-abstract int getSize(int sort, byte[] val);
-abstract int getSize(int sort, long val) throws ASTException;
-abstract int getSizePacked(int sort, int[] val);
-abstract int getSizePacked(int sort, long[] val);
-abstract int getSizePacked(int sort, float[] val);
-abstract int getSizePacked(int sort, double[] val);
-abstract int getSizePacked(int sort, boolean[] val);
+public int getSize(int sort, double val)
+{return encoder.getSize(sort, val);}
+
+public int getSize(int sort, boolean val)
+{return encoder.getSize(sort, val);}
+
+public int getSize(int sort, String val)
+{return encoder.getSize(sort, val);}
+
+public int getSize(int sort, byte[] val)
+{return encoder.getSize(sort, val);}
+
+public int getSize(int sort, long val) throws ASTException
+{return encoder.getSize(sort, val);}
+
+public int getSizePacked(int sort, int[] val)
+{return encoder.getSizePacked(sort, val);}
+
+public int getSizePacked(int sort, long[] val)
+{return encoder.getSizePacked(sort, val);}
+
+public int getSizePacked(int sort, float[] val)
+{return encoder.getSizePacked(sort, val);}
+
+public int getSizePacked(int sort, double[] val)
+{return encoder.getSizePacked(sort, val);}
+
+public int getSizePacked(int sort, boolean[] val)
+{return encoder.getSizePacked(sort, val);}
 
 /* Procedure to calculate the size a message
    including its prefix size, when given
    the unprefixed message size
  */
-abstract int getMessageSize(int size);
+public int getMessageSize(int size)
+{return encoder.getMessageSize(size);}
 
 /* Procedure to calulate size of a tag */
-abstract int getTagSize(int sort, int fieldno);
+public int getTagSize(int sort, int fieldno)
+{return encoder.getTagSize(sort, fieldno);}
 
 //////////////////////////////////////////////////
 /* Procedures to read/write tags */
 
-abstract void write_tag(int sort, int fieldno) throws IOException
+public void write_tag(int sort, int fieldno) throws IOException 
+{encoder.write_tag(sort, fieldno);}
 
 /* Procedure to extract tags; args simulate call by ref */
-abstract boolean read_tag(int[] wiretype, int[] fieldno) throws IOException;
+public boolean read_tag(int[] wiretype, int[] fieldno) throws IOException
+{return encoder.read_tag(wiretype, fieldno);}
 
 /* Procedures to write and sizes */
-abstract void write_size(int size) throws IOException;
-abstract int read_size() throws IOException;
+public void write_size(int size) throws IOException
+{encoder.write_size(size);}
+
+public int read_size() throws IOException
+{return encoder.read_size();}
 
 //////////////////////////////////////////////////
 
-abstract double read_primitive_double(int sort) throws IOException;
-abstract float read_primitive_float(int sort) throws IOException;
-abstract boolean read_primitive_boolean(int sort) throws IOException;
-abstract String read_primitive_string(int sort) throws IOException;
-abstract byte[] read_primitive_bytes(int sort) throws IOException;
-abstract int read_primitive_int(int sort) throws IOException;
-abstract long read_primitive_long(int sort) throws IOException;
-abstract double[] read_primitive_packed_double(int sort) throws IOException;
-abstract float[] read_primitive_packed_float(int sort) throws IOException;
-abstract boolean[] read_primitive_packed_bool(int sort) throws IOException;
+public double read_primitive_double(int sort) throws IOException
+{return encoder.read_primitive_double(sort);}
+
+public float read_primitive_float(int sort) throws IOException
+{return encoder.read_primitive_float(sort);}
+
+public boolean read_primitive_boolean(int sort) throws IOException
+{return encoder.read_primitive_boolean(sort);}
+
+public String read_primitive_string(int sort) throws IOException
+{return encoder.read_primitive_string(sort);}
+
+public byte[] read_primitive_bytes(int sort) throws IOException
+{return encoder.read_primitive_bytes(sort);}
+
+public int read_primitive_int(int sort) throws IOException
+{return encoder.read_primitive_int(sort);}
+
+public long read_primitive_long(int sort) throws IOException
+{return encoder.read_primitive_long(sort);}
+
+public double[] read_primitive_packed_double(int sort) throws IOException
+{return encoder.read_primitive_packed_double(sort);}
+
+public float[] read_primitive_packed_float(int sort) throws IOException
+{return encoder.read_primitive_packed_float(sort);}
+
+public boolean[] read_primitive_packed_bool(int sort) throws IOException
+{return encoder.read_primitive_packed_bool(sort);}
 
 // Read a sequence of values that are expected to be 32 bit integers
-// i.e. sort= Ast_int32,Ast_sint32,Ast_fixed32,Ast_sfixed32
+// i.e. sort= Ast_int32, _sint32, Ast_fixed32, Ast_sfixed32
 
-abstract int[] read_primitive_packed_int(int sort) throws IOException;
+public int[] read_primitive_packed_int(int sort) throws IOException
+{return encoder.read_primitive_packed_int(sort);}
 
 // Read a sequence of values that are expected to be 64 bit integers
-// i.e. sort= Ast_int64,Ast_sint64,Ast_fixed64,Ast_sfixed64
+// i.e. sort= Ast_int64, _sint64, Ast_fixed64, Ast_sfixed64
 
-abstract long[] read_primitive_packed_long(int sort) throws IOException;
+public long[] read_primitive_packed_long(int sort) throws IOException
+{return encoder.read_primitive_packed_long(sort);}
 
 // Write a sequence of values
-abstract void write_primitive(int sort, double val) throws IOException;
-abstract void write_primitive(int sort, float val) throws IOException;
-abstract void write_primitive(int sort, boolean val) throws IOException;
-abstract void write_primitive(int sort, String val) throws IOException;
-abstract void write_primitive(int sort, byte[] bval) throws IOException;
-abstract void write_primitive(int sort, long val) throws IOException;
+public void write_primitive(int sort, double val) throws IOException
+{encoder.write_primitive(sort, val);}
 
-abstract void write_primitive_packed(int sort, double[] val) throws IOException;
-abstract void write_primitive_packed(int sort, float[] val) throws IOException;
-abstract void write_primitive_packed(int sort, boolean[] val) throws IOException;
-abstract void write_primitive_packed(int sort, int[] val) throws IOException;
-abstract void write_primitive_packed(int sort, long[] val) throws IOException;
+public void write_primitive(int sort, float val) throws IOException
+{encoder.write_primitive(sort, val);}
+
+public void write_primitive(int sort, boolean val) throws IOException
+{encoder.write_primitive(sort, val);}
+
+public void write_primitive(int sort, String val) throws IOException
+{encoder.write_primitive(sort, val);}
+
+public void write_primitive(int sort, byte[] bval) throws IOException
+{encoder.write_primitive(sort, bval);}
+
+public void write_primitive(int sort, long val) throws IOException
+{encoder.write_primitive(sort, val);}
+
+public void write_primitive_packed(int sort, double[] val) throws IOException
+{encoder.write_primitive_packed(sort, val);}
+
+public void write_primitive_packed(int sort, float[] val) throws IOException
+{encoder.write_primitive_packed(sort, val);}
+
+public void write_primitive_packed(int sort, boolean[] val) throws IOException
+{encoder.write_primitive_packed(sort, val);}
+
+public void write_primitive_packed(int sort, int[] val) throws IOException
+{encoder.write_primitive_packed(sort, val);}
+
+public void write_primitive_packed(int sort, long[] val) throws IOException
+{encoder.write_primitive_packed(sort, val);}
 
 /* Read into Repeated field */
-abstract double[] repeat_append(int sort, double newval, double[] list);
-abstract float[] repeat_append(int sort, float newval, float[] list);
-abstract boolean[] repeat_append(int sort, boolean newval, boolean[] list);
-abstract int[] repeat_append(int sort, int newval, int[] list);
-abstract long[] repeat_append(int sort, long newval, long[] list);
-abstract String[] repeat_append(int sort, String newval, String[] list);
-abstract byte[][] repeat_append(int sort, byte[] newval, byte[][] list);
+public double[] repeat_append(int sort, double newval, double[] list)
+{return encoder.repeat_append(sort, newval, list);}
+
+public float[] repeat_append(int sort, float newval, float[] list)
+{return encoder.repeat_append(sort, newval, list);}
+
+public boolean[] repeat_append(int sort, boolean newval, boolean[] list)
+{return encoder.repeat_append(sort, newval, list);}
+
+public int[] repeat_append(int sort, int newval, int[] list)
+{return encoder.repeat_append(sort, newval, list);}
+
+public long[] repeat_append(int sort, long newval, long[] list)
+{return encoder.repeat_append(sort, newval, list);}
+
+public String[] repeat_append(int sort, String newval, String[] list)
+{return encoder.repeat_append(sort, newval, list);}
+
+public byte[][] repeat_append(int sort, byte[] newval, byte[][] list)
+{return encoder.repeat_append(sort, newval, list);}
 
 // Special handling for messages and enums
-abstract Object repeat_extend(Object list, java.lang.Class klass);
+public Object repeat_extend(Object list, java.lang.Class klass)
+{return encoder.repeat_extend(list, klass);}
 
 } /*class ASTRuntime*/
 

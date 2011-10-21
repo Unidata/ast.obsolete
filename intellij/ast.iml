@@ -5,6 +5,9 @@
     <content url="file://$MODULE_DIR$/../src">
       <sourceFolder url="file://$MODULE_DIR$/../src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../src/test/java" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/../src/main/java/unidata/ast/runtime/ckp1" />
+      <excludeFolder url="file://$MODULE_DIR$/../src/main/java/unidata/ast/runtime/ckp2" />
+      <excludeFolder url="file://$MODULE_DIR$/../src/main/java/unidata/ast/runtime/ckp3" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

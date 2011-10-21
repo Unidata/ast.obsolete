@@ -95,12 +95,6 @@ public void write_size(int size) throws IOException
 public int read_size() throws IOException
 {return rt.read_size();}
 
-public int readvarint(byte[] buffer) throws IOException
-{return rt.readvarint(buffer);}
-
-public int readandcount(int wiretype, byte[] buffer) throws IOException
-{return rt.readandcount(wiretype, buffer);}
-
 public double read_primitive_double(int sort) throws IOException
 {return rt.read_primitive_double(sort);}
 

@@ -3,14 +3,77 @@
  *   See netcdf/COPYRIGHT file for copying and redistribution conditions.
  *********************************************************************/
 
+// This code contains code taken from Google's protobuf implementation
+// Google code copyright follows:
+// Protocol Buffers - Google's data interchange format
+// Copyright 2008 Google Inc.  All rights reserved.
+// http://code.google.com/p/protobuf/
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//     * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//     * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//     * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
 package unidata.ast.runtime;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.lang.reflect.Array;
 
-public class ProtobufRuntime extends ASTRuntime
+import static unidata.ast.runtime.ASTRuntime.*;
+import static unidata.ast.runtime.ASTRuntime.Sort.*;
+import static unidata.ast.runtime.ASTRuntime.Wiretype.*;
+
+public class ProtobufEncoding extends Encoding
 {
+
+//////////////////////////////////////////////////
+
+static public int wiretype(int sort)
+{
+	switch (sort) {
+	case Ast_float: case Ast_fixed32: case Ast_sfixed32:
+	    return Wiretype.Ast_32bit;
+	case Ast_double: case Ast_fixed64: case Ast_sfixed64:
+	    return Wiretype.Ast_64bit;
+	case Ast_string: case Ast_bytes: case Ast_message:
+	    return Wiretype.Ast_counted;
+	default:
+	}
+	return Wiretype.Ast_varint;
+}
+
+static public int wiresize(int sort)
+  {
+      switch (sort) {
+      case Ast_float: case Ast_fixed32: case Ast_sfixed32: case Ast_enum: return 4;
+      case Ast_double: case Ast_fixed64: case Ast_sfixed64: return 8;
+      case Ast_bool: return 1;
+      default: break;
+      }
+      return 0;
+  }
 
 //////////////////////////////////////////////////
 // Instance fields
@@ -24,16 +87,10 @@ ByteBuffer varintbuffer = new ByteBuffer(); // for writing packed data that is e
 //////////////////////////////////////////////////
 // Constructor(s)
 
-public ProtobufRuntime()
+public ProtobufEncoding()
     throws ASTException
 {
     super();
-}
-
-public ProtobufRuntime(AbstractIO io)
-        throws ASTException
-{
-    super(io);
 }
 
 //////////////////////////////////////////////////
@@ -43,7 +100,7 @@ protected int
 readvarint(byte[] buffer)
     throws IOException
 {
-    return readwiretype(Wiretype.Ast_varint,buffer);
+    return readwirevalue(Wiretype.Ast_varint, buffer);
 }
 
 /* Based on the wiretype, extract the proper number of bytes
@@ -54,10 +111,10 @@ readvarint(byte[] buffer)
 */
 
 protected int
-readwiretype(int wiretype, byte[] buffer)
+readwirevalue(int wiretype, byte[] buffer)
     throws IOException
 {
-    int count;
+    int count = 0;
     switch (wiretype) {
     case Ast_varint:
         for(int i=0;i<buffer.length;i++) {
@@ -75,18 +132,18 @@ readwiretype(int wiretype, byte[] buffer)
 	count = 4;
         if(!io.read(buffer, 0,4)) count = -1;
 	break;
-    case ASTRuntime.Wiretype.Ast_64bit:
+    case Ast_64bit:
 	count = 8;
         if(!io.read(buffer, 0,8)) count = -1;
 	break;
     case Ast_counted: /* get the count */
-        int len = readwiretype(Ast_varint,buffer,io);
+        int len = readwirevalue(Ast_varint, buffer);
 	count = uint32_decode(len,buffer);
 	break;
     default:
 	throw new ASTException("Unexpected wiretype: "+wiretype);
     }
-    return 0;
+    return count;
 }
 
 //////////////////////////////////////////////////
@@ -110,7 +167,7 @@ skip_field(int wiretype, int fieldno)
     case Wiretype.Ast_counted:
         len = readvarint(valuebuffer);
         /* get the count */
-	len = Encoding.uint32_decode(len, valuebuffer);
+	len = uint32_decode(len, valuebuffer);
 	/* Now skip "len" bytes */
 	while(len > 0) {
 	    int count = (len > valuebuffer.length? valuebuffer.length:len);
@@ -159,7 +216,7 @@ getSize(int sort, String val)
     int count = 0;
     if(val != null) {
 	int slen = val.length();
-        count = Encoding.uint32_size(slen);
+        count = uint32_size(slen);
 	count += slen;
     }
     return count;
@@ -171,7 +228,7 @@ getSize(int sort, byte[] val)
     assert(sort == Sort.Ast_bytes);
     int count = 0;
     if(val != null) {
-	count = Encoding.uint32_size(val.length);
+	count = uint32_size(val.length);
         count += val.length;
     }
     return count;
@@ -184,17 +241,17 @@ getSize(int sort, long val)
     switch (sort) {
     case Sort.Ast_enum: /* fall thru */
     case Sort.Ast_int32:
-	return Encoding.int32_size((int)val);
+	return int32_size((int)val);
     case Sort.Ast_int64:
-	return Encoding.int64_size(val);
+	return int64_size(val);
     case Sort.Ast_uint32:
-	return Encoding.uint32_size((int)val);
+	return uint32_size((int)val);
     case Sort.Ast_uint64:
-	return Encoding.uint64_size(val);
+	return uint64_size(val);
     case Sort.Ast_sint32:
-	return Encoding.sint32_size((int)val);
+	return sint32_size((int)val);
     case Sort.Ast_sint64:
-	return Encoding.sint64_size(val);
+	return sint64_size(val);
     case Sort.Ast_fixed32:
 	return 4;
     case Sort.Ast_sfixed32:
@@ -212,12 +269,12 @@ getSize(int sort, long val)
 int
 getSizePacked(int sort, int[] val)
 {
-    switch (Sort.wiretype(sort)) {
+    switch (wiretype(sort)) {
     case Wiretype.Ast_varint:
 	// Sigh! we have to walk it
 	int size = 0;
 	for(int i=0;i<val.length;i++)
-	    size += Encoding.int64_size((long)val[i]);
+	    size += int64_size((long)val[i]);
 	return size;
     case Wiretype.Ast_32bit:
 	return 4*val.length;
@@ -229,12 +286,12 @@ getSizePacked(int sort, int[] val)
 int
 getSizePacked(int sort, long[] val)
 {
-    switch (Sort.wiretype(sort)) {
+    switch (wiretype(sort)) {
     case Wiretype.Ast_varint:
 	// Sigh! we have to walk it
 	int size = 0;
 	for(int i=0;i<val.length;i++)
-	    size += Encoding.int64_size(val[i]);
+	    size += int64_size(val[i]);
 	return size;
     case Wiretype.Ast_64bit:
 	return 8*val.length;
@@ -270,7 +327,7 @@ getSizePacked(int sort, boolean[] val)
 int
 getMessageSize(int size)
 {
-    int count = Encoding.uint32_encode(size,sizebuffer);
+    int count = uint32_encode(size,sizebuffer);
     return count+size;
 }
 
@@ -278,8 +335,8 @@ getMessageSize(int size)
 int
 getTagSize(int sort, int fieldno)
 {
-    int wiretype = Sort.wiretype(sort);
-    int count = Encoding.encode_tag(wiretype,fieldno, sizebuffer);
+    int wiretype = wiretype(sort);
+    int count = encode_tag(wiretype,fieldno, sizebuffer);
     return count;
 }
 
@@ -289,8 +346,8 @@ void
 write_tag(int sort, int fieldno)
     throws IOException
 {
-    int wiretype = Sort.wiretype(sort);
-    int count = Encoding.encode_tag(wiretype,fieldno, sizebuffer);
+    int wiretype = wiretype(sort);
+    int count = encode_tag(wiretype,fieldno, sizebuffer);
     io.write(count, sizebuffer);
 }
 
@@ -307,7 +364,7 @@ read_tag(int[] wiretype, int[] fieldno)
     if(count < 0) return false;
 
     /* convert from varint */
-    key = Encoding.uint32_decode(count, sizebuffer);
+    key = uint32_decode(count, sizebuffer);
 
     /* Extract the wiretype and fieldno */
     wiretype[0] = (key & 0x7);
@@ -322,7 +379,7 @@ write_size(int size)
     throws IOException
 {
     /* write size as varint */
-    int len = Encoding.uint32_encode(size, sizebuffer);
+    int len = uint32_encode(size, sizebuffer);
     io.write(len, sizebuffer);
 }
 
@@ -333,7 +390,7 @@ read_size()
 {
     int len = readvarint(sizebuffer);
     if(len < 0) return len;
-    return Encoding.uint32_decode(len, sizebuffer);
+    return uint32_decode(len, sizebuffer);
 }
 
 //////////////////////////////////////////////////
@@ -344,9 +401,9 @@ read_primitive_double(int sort)
     throws IOException
 {
     assert(sort == Sort.Ast_double);
-    int wiretype = Sort.wiretype(sort);
-    int len = readandcount(wiretype, valuebuffer);
-    double value = Encoding.float64_decode(Sort.javasize(Sort.Ast_double), valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
+    double value = float64_decode(len, valuebuffer);
     return value;
 }
 
@@ -355,9 +412,9 @@ read_primitive_float(int sort)
     throws IOException
 {
     assert(sort == Sort.Ast_float);
-    int wiretype = Sort.wiretype(sort);
-    long len = readandcount(wiretype, valuebuffer);
-    float value = Encoding.float32_decode(Sort.javasize(Sort.Ast_float), valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
+    float value = float32_decode(len, valuebuffer);
     return value;
 }
 
@@ -366,9 +423,9 @@ read_primitive_boolean(int sort)
     throws IOException
 {
     assert(sort == Sort.Ast_bool);
-    int wiretype = Sort.wiretype(sort);
-    int len = readandcount(wiretype, valuebuffer);
-    boolean value = Encoding.bool_decode(len, valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
+    boolean value = bool_decode(len, valuebuffer);
     return value;
 }
 
@@ -377,8 +434,8 @@ read_primitive_string(int sort)
     throws IOException
 {
     assert(sort == Sort.Ast_string);
-    int wiretype = Sort.wiretype(sort);
-    int len = readandcount(wiretype, valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
     byte[] stringbuf = new byte[len];
     if(!read(stringbuf, 0,len))
 	throw new ASTException("too few bytes");
@@ -390,8 +447,8 @@ read_primitive_bytes(int sort)
     throws IOException
 {
     assert(sort == Sort.Ast_bytes);
-    int wiretype = Sort.wiretype(sort);
-    int len = readandcount(wiretype, valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
     byte[] value = new byte[len];
     if(!read(value, 0,len))
 	throw new ASTException("too few bytes");
@@ -403,20 +460,20 @@ read_primitive_int(int sort)
     throws IOException
 {
     /* compute the wiretype from the sort */
-    int wiretype = Sort.wiretype(sort);
-    int len = readandcount(wiretype, valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
     switch (sort) {
     case Sort.Ast_enum: /* fall thru */
     case Sort.Ast_int32:
-        return Encoding.int32_decode(len, valuebuffer);
+        return int32_decode(len, valuebuffer);
     case Sort.Ast_uint32:
-        return Encoding.uint32_decode(len, valuebuffer);
+        return uint32_decode(len, valuebuffer);
     case Sort.Ast_sint32:
-        return Encoding.sint32_decode(len, valuebuffer);
+        return sint32_decode(len, valuebuffer);
     case Sort.Ast_fixed32:
-        return Encoding.fixed32_decode(4, valuebuffer);
+        return fixed32_decode(4, valuebuffer);
     case Sort.Ast_sfixed32:
-        return Encoding.fixed32_decode(4, valuebuffer);
+        return fixed32_decode(4, valuebuffer);
     default: break;
     }
     throw new ASTException("Unexpected sort: " + sort);
@@ -427,19 +484,19 @@ read_primitive_long(int sort)
     throws IOException
 {
     /* compute the wiretype from the sort */
-    int wiretype = Sort.wiretype(sort);
-    int len = readandcount(wiretype, valuebuffer);
+    int wiretype = wiretype(sort);
+    int len = readwirevalue(wiretype, valuebuffer);
     switch (sort) {
     case Sort.Ast_int64:
-        return Encoding.int64_decode(len, valuebuffer);
+        return int64_decode(len, valuebuffer);
     case Sort.Ast_uint64:
-        return Encoding.uint64_decode(len, valuebuffer);
+        return uint64_decode(len, valuebuffer);
     case Sort.Ast_sint64:
-        return Encoding.sint64_decode(len, valuebuffer);
+        return sint64_decode(len, valuebuffer);
     case Sort.Ast_fixed64:
-        return Encoding.fixed64_decode(8, valuebuffer);
+        return fixed64_decode(8, valuebuffer);
     case Sort.Ast_sfixed64:
-        return Encoding.fixed64_decode(8, valuebuffer);
+        return fixed64_decode(8, valuebuffer);
     default: break;
     }
     throw new ASTException("Unexpected sort: " + sort);
@@ -452,8 +509,8 @@ read_primitive_packed_double(int sort)
     // extract the count
     assert(sort == Sort.Ast_double);
     int wiretype = Wiretype.Ast_counted;
-    int size = readandcount(wiretype, valuebuffer);
-    int sizeof = Sort.javasize(sort);
+    int size = readwirevalue(wiretype, valuebuffer);
+    int sizeof = wiresize(sort);
 
     // Pull out the values as doubles
     int ndoubles = size/sizeof;
@@ -463,7 +520,7 @@ read_primitive_packed_double(int sort)
     for(int i=0;i<ndoubles;i++) {
 	if(!read(valuebuffer, 0,sizeof))
 	    throw new ASTException("too few bytes");
-	output[i] = Encoding.float64_decode(8, valuebuffer);
+	output[i] = float64_decode(8, valuebuffer);
     }	
     return output;
 }
@@ -475,8 +532,8 @@ read_primitive_packed_float(int sort)
     // extract the count
     assert(sort == Sort.Ast_float);
     int wiretype = Wiretype.Ast_counted;
-    int size = readandcount(wiretype, valuebuffer);
-    int sizeof = Sort.javasize(sort);
+    int size = readwirevalue(wiretype, valuebuffer);
+    int sizeof = wiresize(sort);
 
     // Pull out the values as floats
     int nfloats = size/sizeof;
@@ -486,7 +543,7 @@ read_primitive_packed_float(int sort)
     for(int i=0;i<nfloats;i++) {
 	if(!read(valuebuffer, 0,size))
 	    throw new ASTException("too few bytes");
-	output[i] = Encoding.float32_decode(4, valuebuffer);
+	output[i] = float32_decode(4, valuebuffer);
     }	
     return output;
 }
@@ -498,8 +555,8 @@ read_primitive_packed_bool(int sort)
     // extract the count
     assert(sort == Sort.Ast_bool);
     int wiretype = Wiretype.Ast_counted;
-    int size = readandcount(wiretype, valuebuffer);
-    int sizeof = Sort.javasize(sort);
+    int size = readwirevalue(wiretype, valuebuffer);
+    int sizeof = wiresize(sort);
 
     // Pull out the values as bools
     int nbools = size/sizeof;
@@ -509,7 +566,7 @@ read_primitive_packed_bool(int sort)
     for(int i=0;i<nbools;i++) {
 	if(!read(valuebuffer, 0,size))
 	    throw new ASTException("too few bytes");
-	output[i] = Encoding.bool_decode(size, valuebuffer);
+	output[i] = bool_decode(size, valuebuffer);
     }	
     return output;
 }
@@ -522,42 +579,42 @@ read_primitive_packed_int(int sort)
     throws IOException
 {
     // extract the count; put data into valuebuffer (except for Wiretype.Ast_counted)
-    int size = readandcount(Wiretype.Ast_counted, valuebuffer);
+    int size = readwirevalue(Wiretype.Ast_counted, valuebuffer);
     int len = 0;
     Ibuffer intdata = new Ibuffer();
 
 
 // i.e. sort= Ast_(u)int32,Ast_sint32,Ast_fixed32,Ast_sfixed32
 loop: for(int avail=size;avail > 0;) {
-	switch (Sort.wiretype(sort)) {
+	switch (wiretype(sort)) {
         case Wiretype.Ast_varint:
             len = readvarint(valuebuffer);
 	    if(len < 0) break loop;
             avail -= len;
 	    break;
         case Wiretype.Ast_32bit:
-            len = readandcount(Wiretype.Ast_32bit, valuebuffer);
+            len = readwirevalue(Wiretype.Ast_32bit, valuebuffer);
 	    if(len < 0) break loop;
             avail -= len;
 	    break;
         default:
-	    throw new ASTException("illegal wiretype: " + Sort.wiretype(sort));
+	    throw new ASTException("illegal wiretype: " + wiretype(sort));
         }
         switch (sort) {
         case Sort.Ast_int32:
-	    intdata.add(Encoding.int32_decode(len, valuebuffer));
+	    intdata.add(int32_decode(len, valuebuffer));
 	    break;			
         case Sort.Ast_uint32:
-	    intdata.add(Encoding.uint32_decode(len, valuebuffer));
+	    intdata.add(uint32_decode(len, valuebuffer));
 	    break;			
         case Sort.Ast_sint32:
-	    intdata.add(Encoding.sint32_decode(len, valuebuffer));
+	    intdata.add(sint32_decode(len, valuebuffer));
 	    break;			
         case Sort.Ast_fixed32:
-	    intdata.add(Encoding.fixed32_decode(4, valuebuffer));
+	    intdata.add(fixed32_decode(4, valuebuffer));
 	    break;
         case Sort.Ast_sfixed32:
-	    intdata.add(Encoding.fixed32_decode(4, valuebuffer));
+	    intdata.add(fixed32_decode(4, valuebuffer));
 	    break;
         default: break;
         }
@@ -573,43 +630,43 @@ read_primitive_packed_long(int sort)
     throws IOException
 {
     // extract the count
-    int count = readandcount(Wiretype.Ast_counted, valuebuffer);
-    int size = Sort.javasize(sort); // 0 => unknown => varint
+    int count = readwirevalue(Wiretype.Ast_counted, valuebuffer);
+    int size = wiresize(sort); // 0 => unknown => varint
     int len = 0;
     Lbuffer longdata = new Lbuffer();
 
 // i.e. sort= Ast_(u)int64,Ast_sint64,Ast_fixed64,Ast_sfixed64
 loop: for(int avail=size;avail > 0;) {
-	switch (Sort.wiretype(sort)) {
+	switch (wiretype(sort)) {
         case Wiretype.Ast_varint:
             len = readvarint(valuebuffer);
 	    if(len < 0) break loop;
             avail -= len;
 	    break;
         case Wiretype.Ast_64bit:
-            len = readandcount(Wiretype.Ast_64bit, valuebuffer);
+            len = readwirevalue(Wiretype.Ast_64bit, valuebuffer);
 	    if(len < 0) break loop;
             avail -= len;
 	    break;
         default:
-	    throw new ASTException("illegal wiretype: " + Sort.wiretype(sort));
+	    throw new ASTException("illegal wiretype: " + wiretype(sort));
         }
 
         switch (sort) {
         case Sort.Ast_int64:
-	    longdata.add(Encoding.int64_decode(len, valuebuffer));
+	    longdata.add(int64_decode(len, valuebuffer));
 	    break;			
         case Sort.Ast_uint64:
-	    longdata.add(Encoding.uint64_decode(len, valuebuffer));
+	    longdata.add(uint64_decode(len, valuebuffer));
 	    break;			
         case Sort.Ast_sint64:
-	    longdata.add(Encoding.sint64_decode(len, valuebuffer));
+	    longdata.add(sint64_decode(len, valuebuffer));
 	    break;			
         case Sort.Ast_fixed64:
-	    longdata.add(Encoding.fixed64_decode(8, valuebuffer));
+	    longdata.add(fixed64_decode(8, valuebuffer));
 	    break;
         case Sort.Ast_sfixed64:
-	    longdata.add(Encoding.fixed64_decode(8, valuebuffer));
+	    longdata.add(fixed64_decode(8, valuebuffer));
 	    break;
         default: break;
         }
@@ -622,7 +679,7 @@ write_primitive(int sort, double val)
     throws IOException
 {
     assert(sort == Sort.Ast_double);
-    int count = Encoding.float64_encode(val, valuebuffer);
+    int count = float64_encode(val, valuebuffer);
     write(count, valuebuffer);
 }
 
@@ -631,7 +688,7 @@ write_primitive(int sort, float val)
     throws IOException
 {
     assert(sort == Sort.Ast_float);
-    int count = Encoding.float32_encode(val, valuebuffer);
+    int count = float32_encode(val, valuebuffer);
     write(count, valuebuffer);
 }
 
@@ -640,7 +697,7 @@ write_primitive(int sort, boolean val)
     throws IOException
 {
     assert(sort == Sort.Ast_bool);
-    int count = Encoding.bool_encode(val, valuebuffer);
+    int count = bool_encode(val, valuebuffer);
     write(count, valuebuffer);
 }
 
@@ -674,41 +731,41 @@ write_primitive(int sort, long val)
     /* Write the data in proper wiretype format using the sort */
     switch (sort) {
     case Sort.Ast_int32:
-	count = Encoding.int32_encode(ival, valuebuffer);
+	count = int32_encode(ival, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_int64:
-	count = Encoding.int64_encode(val, valuebuffer);
+	count = int64_encode(val, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_uint32:
-	count = Encoding.uint32_encode(ival, valuebuffer);
+	count = uint32_encode(ival, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_uint64:
-	count = Encoding.uint64_encode(val, valuebuffer);
+	count = uint64_encode(val, valuebuffer);
 	write(count, valuebuffer);
 	break;
     case Sort.Ast_sint32:
-	count = Encoding.sint32_encode(ival, valuebuffer);
+	count = sint32_encode(ival, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_sint64:
-	count = Encoding.sint64_encode(val, valuebuffer);
+	count = sint64_encode(val, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_enum:
-	count = Encoding.int32_encode(ival, valuebuffer);
+	count = int32_encode(ival, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_fixed32: /* fall thru */
     case Sort.Ast_sfixed32: /* fall thru */
-	count = Encoding.fixed32_encode(ival, valuebuffer);
+	count = fixed32_encode(ival, valuebuffer);
         write(count, valuebuffer);
 	break;
     case Sort.Ast_fixed64:  /* fall thru */
     case Sort.Ast_sfixed64: /* fall thru */
-	count = Encoding.fixed64_encode(val, valuebuffer);
+	count = fixed64_encode(val, valuebuffer);
         write(count, valuebuffer);
 	break;
     default:
@@ -766,19 +823,19 @@ write_primitive_packed(int sort, int[] val)
     case Sort.Ast_enum:
     case Sort.Ast_int32:
 	for(int i=0;i<val.length;i++) {
-	    count = Encoding.int32_encode(val[i], valuebuffer);
+	    count = int32_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
     case Sort.Ast_uint32:
 	for(int i=0;i<val.length;i++) {
-	    count = Encoding.uint32_encode(val[i], valuebuffer);
+	    count = uint32_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
     case Sort.Ast_sint32:
 	for(int i=0;i<val.length;i++) {
-	    count = Encoding.sint32_encode(val[i], valuebuffer);
+	    count = sint32_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
@@ -786,7 +843,7 @@ write_primitive_packed(int sort, int[] val)
     case Sort.Ast_sfixed32: /* fall thru */
     case Sort.Ast_float:
 	for(int i=0;i<val.length;i++) {
-  	    count = Encoding.fixed32_encode(val[i], valuebuffer);
+  	    count = fixed32_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
@@ -814,19 +871,19 @@ write_primitive_packed(int sort, long[] val)
     case Sort.Ast_enum:
     case Sort.Ast_int64:
 	for(int i=0;i<val.length;i++) {
-	    count = Encoding.int64_encode(val[i], valuebuffer);
+	    count = int64_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
     case Sort.Ast_uint64:
 	for(int i=0;i<val.length;i++) {
-	    count = Encoding.uint64_encode(val[i], valuebuffer);
+	    count = uint64_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
     case Sort.Ast_sint64:
 	for(int i=0;i<val.length;i++) {
-	    count = Encoding.sint64_encode(val[i], valuebuffer);
+	    count = sint64_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
@@ -834,7 +891,7 @@ write_primitive_packed(int sort, long[] val)
     case Sort.Ast_sfixed64: /* fall thru */
     case Sort.Ast_float:
 	for(int i=0;i<val.length;i++) {
-  	    count = Encoding.fixed64_encode(val[i], valuebuffer);
+  	    count = fixed64_encode(val[i], valuebuffer);
 	    varintbuffer.add(valuebuffer,0,count);
 	}
 	break;
@@ -953,18 +1010,13 @@ repeat_extend(Object list, java.lang.Class klass)
 }
 
 //////////////////////////////////////////////////
-/**
-  Isolate the encoding methods to a static internal class
-*/
-
-static protected class Encoding
-{
+// Implement Encoding abstract methods
 
 /* Return the number of bytes required to store the
    tag for the field, which includes 3 bits for
    the wire-type, and a single bit that denotes the end-of-tag.
 */
-int
+static int
 encode_tag(int wiretype, int fieldno, byte[] buffer)
 {
     int key;
@@ -984,7 +1036,7 @@ encode_tag(int wiretype, int fieldno, byte[] buffer)
    for unsigned ints.
 */
 
-int
+static int
 uint32_encode(int value, byte[] out)
 {
     int count = 0;
@@ -1005,7 +1057,7 @@ uint32_encode(int value, byte[] out)
    twos-complement 64-bit integers.
 */
 
-int
+static int
 int32_encode(int value, byte[] out)
 {
   if(value >= 0)
@@ -1015,25 +1067,25 @@ int32_encode(int value, byte[] out)
 }
 
 /*
-Pack a 32-bit integer in zigwag encoding.
+Pack a 32-bit integer in zigwag 
 */
 
-int
+static int
 sint32_encode(int value, byte[] out)
 {
   return uint32_encode(zigzag32(value), out);
 }
 
 /* Pack a 64-bit unsigned integer that fits in a 64-bit uint,
-   using base-128 encoding. */
+   using base-128  */
 
-int
+static int
 int64_encode(long value, byte[] out)
 {
     return uint64_encode(value,out);
 }
 
-int
+static int
 uint64_encode(long value, byte[] out)
 {
     int count = 0;
@@ -1053,7 +1105,7 @@ uint64_encode(long value, byte[] out)
    the size of the packed output.  (Max returned value is 10)
 */
 
-int
+static int
 sint64_encode(long value, byte[] out)
 {
   return uint64_encode(zigzag64(value), out);
@@ -1063,7 +1115,7 @@ sint64_encode(long value, byte[] out)
    sfixed32, float
 */
 
-int
+static int
 fixed32_encode(int value, byte[] out)
 {
   // Protobuf apparently uses little endian
@@ -1080,7 +1132,7 @@ fixed32_encode(int value, byte[] out)
 
 /* Protobuf writes little endian */
 
-int
+static int
 fixed64_encode(long value, byte[] out)
 {
   // Protobuf apparently uses little endian
@@ -1102,21 +1154,21 @@ fixed64_encode(long value, byte[] out)
 /* XXX: perhaps on some platforms "*out = !!value" would be
    a better impl, b/c that is idiotmatic c++ in some stl impls. */
 
-int
+static int
 bool_encode(boolean value, byte[] out)
 {
   out[0] = (byte) (value ? 1 : 0);
   return 1;
 }
 
-int
+static int
 float32_encode(float value, byte[] out)
 {
    int i = Float.floatToIntBits(value);
    return fixed32_encode(i,out);
 }
 
-int
+static int
 float64_encode(double value, byte[] out)
 {
    long l = Double.doubleToLongBits(value);
@@ -1125,7 +1177,7 @@ float64_encode(double value, byte[] out)
 
 
 /* Decode a 32 bit varint */
-int
+static int
 uint32_decode(int len, byte[] data)
 {
     int pos=0;
@@ -1152,14 +1204,14 @@ uint32_decode(int len, byte[] data)
     return result;
 }
 
-int
+static int
 int32_decode(int len, byte[] data)
 {
     return uint32_decode(len, data);
 }
 
 /* Decode possibly 64-bit varint*/
-long
+static long
 uint64_decode(int len, byte[] data)
 {
     int pos = 0;
@@ -1174,26 +1226,26 @@ uint64_decode(int len, byte[] data)
     return result;
 }
 
-long
+static long
 int64_decode(int len, byte[] data)
 {
   return uint64_decode(len, data);
 }
 
-int
+static int
 sint32_decode(int len, byte[] data)
 {
     return unzigzag32(uint32_decode(len, data));
 }
 
-long
+static long
 sint64_decode(int len, byte[] data)
 {
     return unzigzag64(uint64_decode(len, data));
 }
 
 /* remember: protobuf writes little-endian */
-int
+static int
 fixed32_decode(int len, byte[] data)
 {
   int rv = (
@@ -1205,7 +1257,7 @@ fixed32_decode(int len, byte[] data)
   return rv;
 }
 
-long
+static long
 fixed64_decode(int len, byte[] data)
 {
   long rv = 0;
@@ -1220,7 +1272,7 @@ fixed64_decode(int len, byte[] data)
   return rv;
 }
 
-boolean
+static boolean
 bool_decode(int len, byte[] data)
 {
   int i;
@@ -1233,14 +1285,14 @@ bool_decode(int len, byte[] data)
   return tf;
 }
 
-double
+static double
 float64_decode(int len, byte[] buffer)
 {
    long ld = fixed64_decode(len, buffer);
    return Double.longBitsToDouble(ld);
 }
 
-float
+static float
 float32_decode(int len, byte[] buffer)
 {
    int i = fixed32_decode(len, buffer);
@@ -1250,7 +1302,7 @@ float32_decode(int len, byte[] buffer)
 
 /* return the zigzag-encoded 32-bit unsigned int from a 32-bit signed int */
 
-int
+static int
 zigzag32(int n)
 {
   int zz = (n << 1) ^ (n >> 31);
@@ -1259,21 +1311,21 @@ zigzag32(int n)
 
 /* return the zigzag-encoded 64-bit unsigned int from a 64-bit signed int */
 
-long
+static long
 zigzag64(long n)
 {
     long zz = (n << 1) ^ (n >> 63);
     return zz;
 }
 
-int
+static int
 unzigzag32(int n)
 {
   int zz = (n >>> 1) ^ -(n & 1);
   return zz;
 }
 
-long
+static long
 unzigzag64(long n)
 {
   long zz = (n >>> 1) ^ -(n & 1);
@@ -1283,9 +1335,9 @@ unzigzag64(long n)
 
 /* Return the number of bytes required to store
    a variable-length unsigned integer that fits in 32-bit uint
-   in base-128 encoding. */
+   in base-128  */
 
-int
+static int
 uint32_size(int value)
 {
   if ((value & (0xffffffff <<  7)) == 0) return 1;
@@ -1297,8 +1349,8 @@ uint32_size(int value)
 
 /* Return the number of bytes required to store
    a variable-length signed integer that fits in 32-bit int
-   in base-128 encoding. */
-int
+   in base-128  */
+static int
 int32_size(int v)
 {
   return uint32_size(v);
@@ -1306,8 +1358,8 @@ int32_size(int v)
 
 /* Return the number of bytes required to store
    a variable-length unsigned integer that fits in 64-bit uint
-   in base-128 encoding. */
-int
+   in base-128  */
+static int
 uint64_size(long value)
 {
    if ((value & (0xffffffffffffffffL <<  7)) == 0) return 1;
@@ -1324,9 +1376,9 @@ uint64_size(long value)
 
 /* Return the number of bytes required to store
    a variable-length unsigned integer that fits in 64-bit int
-   in base-128 encoding.
+   in base-128 
 */
-int
+static int
 int64_size(long v)
 {
   return uint64_size(v);
@@ -1335,9 +1387,9 @@ int64_size(long v)
 /* Return the number of bytes required to store
    a variable-length signed integer that fits in 32-bit int,
    converted to unsigned via the zig-zag algorithm,
-   then packed using base-128 encoding. */
+   then packed using base-128  */
 
-int
+static int
 sint32_size(int v)
 {
   return uint32_size(zigzag32(v));
@@ -1347,8 +1399,8 @@ sint32_size(int v)
 /* Return the number of bytes required to store
    a variable-length signed integer that fits in 64-bit int,
    converted to unsigned via the zig-zag algorithm,
-   then packed using base-128 encoding. */
-int
+   then packed using base-128  */
+static int
 sint64_size(long v)
 {
   return uint64_size(zigzag64(v));
@@ -1356,7 +1408,7 @@ sint64_size(long v)
 
 //////////////////////////////////////////////////
 // These functions need access to the io stream
-int
+static int
 readwiretype(int wiretype, byte[] buffer, AbstractIO io)
     throws IOException
 {
@@ -1378,7 +1430,7 @@ readwiretype(int wiretype, byte[] buffer, AbstractIO io)
 	count = 4;
         if(!io.read(buffer, 0,4)) count = -1;
 	break;
-    case ASTRuntime.Wiretype.Ast_64bit:
+    case Ast_64bit:
 	count = 8;
         if(!io.read(buffer, 0,8)) count = -1;
 	break;
@@ -1391,8 +1443,6 @@ readwiretype(int wiretype, byte[] buffer, AbstractIO io)
     }
     return 0;
 }
-
-} // class Encoding
 
 } /*class ASTRuntime*/
 

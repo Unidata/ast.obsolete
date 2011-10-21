@@ -92,8 +92,10 @@ clean::
 jar::
 	cd f:/git/ast ; ant all
 
+ENCODING=-Dencoding=xdr
+
 test::
 	rm -fr classes
 	mkdir classes
 	javac -d classes -classpath "${JARDIR}/${JAR}" ${TESTSRC}
-	java -Dcoding=xdr -cp "classes;${JARDIR}/${JAR}" unidata.ast.test.${MAIN}
+	java ${ENCODING} -cp "classes;${JARDIR}/${JAR}" unidata.ast.test.${MAIN}

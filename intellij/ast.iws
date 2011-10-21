@@ -24,6 +24,11 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="ChangesViewManager" flattened_view="true" show_ignored="false" />
+  <component name="Commander">
+    <leftPanel />
+    <rightPanel />
+    <splitter proportion="0.5" />
+  </component>
   <component name="CreatePatchCommitExecutor">
     <option name="PATCH_PATH" value="" />
     <option name="REVERSE_PATCH" value="false" />
@@ -49,6 +54,36 @@
         <option name="LOG_MESSAGE" value="" />
       </breakpoint>
       <breakpoint class_name="java.lang.NullPointerException" package_name="java.lang">
+        <option name="NOTIFY_CAUGHT" value="true" />
+        <option name="NOTIFY_UNCAUGHT" value="true" />
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint class_name="java.lang.AssertionError" package_name="java.lang">
+        <option name="NOTIFY_CAUGHT" value="true" />
+        <option name="NOTIFY_UNCAUGHT" value="true" />
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint class_name="java.lang.ArithmeticException" package_name="java.lang">
         <option name="NOTIFY_CAUGHT" value="true" />
         <option name="NOTIFY_UNCAUGHT" value="true" />
         <option name="ENABLED" value="true" />
@@ -92,6 +127,58 @@
         <option name="LOG_MESSAGE" value="" />
       </breakpoint>
       <breakpoint url="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Primtests.java" line="108" class="unidata.ast.test.Primtests.PrimRequired" package="unidata.ast.test">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/TestAst.java" line="413" class="unidata.ast.test.TestAst.Testprim3" package="unidata.ast.test">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Primtests.java" line="527" class="unidata.ast.test.Primtests.PrimRepeated" package="unidata.ast.test">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Msgtests.java" line="112" class="unidata.ast.test.Msgtests.Msgtest" package="unidata.ast.test">
+        <option name="ENABLED" value="true" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INSTANCE_FILTERS_ENABLED" value="false" />
+        <option name="CONDITION" value="" />
+        <option name="LOG_MESSAGE" value="" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Bytetests.java" line="50" class="unidata.ast.test.Bytetests.Bytetest" package="unidata.ast.test">
         <option name="ENABLED" value="true" />
         <option name="LOG_ENABLED" value="false" />
         <option name="LOG_EXPRESSION_ENABLED" value="false" />
@@ -152,8 +239,8 @@
       <property name="field_breakpoints_groupByClasses" value="true" />
       <property name="method_breakpoints_groupByClasses" value="true" />
       <property name="exception_breakpoints_viewId" value="TABLE" />
-      <property name="field_breakpoints_viewId" value="TABLE" />
       <property name="exception_breakpoints_groupByClasses" value="true" />
+      <property name="field_breakpoints_viewId" value="TABLE" />
       <property name="method_breakpoints_groupByMethods" value="false" />
     </ui_properties>
   </component>
@@ -162,37 +249,10 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="JavaGenerator.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/generators/java/JavaGenerator.java">
+      <file leaf-file-name="Bytetests.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Bytetests.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="956" column="117" selection-start="31032" selection-end="31032" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ASTRuntime.java" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ASTRuntime.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="546" column="92" selection-start="12603" selection-end="12603" vertical-scroll-proportion="0.086440675">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="XdrCoding.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XdrCoding.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="211" column="0" selection-start="5674" selection-end="5674" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="Primtests.java" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Primtests.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="114" column="0" selection-start="3352" selection-end="3352" vertical-scroll-proportion="0.0">
+            <state line="56" column="0" selection-start="1141" selection-end="1141" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -201,7 +261,7 @@
       <file leaf-file-name="AbstractMessage.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractMessage.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="122" column="0" selection-start="3493" selection-end="3493" vertical-scroll-proportion="0.0">
+            <state line="107" column="0" selection-start="2981" selection-end="2981" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -210,7 +270,43 @@
       <file leaf-file-name="TestAst.java" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/TestAst.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="240" column="120" selection-start="7130" selection-end="7130" vertical-scroll-proportion="0.0">
+            <state line="231" column="0" selection-start="7094" selection-end="7094" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="ASTRuntime.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ASTRuntime.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="293" column="0" selection-start="8084" selection-end="8084" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="XDREncoding.java" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XDREncoding.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="56" column="36" selection-start="2596" selection-end="2596" vertical-scroll-proportion="0.38643068">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Encoding.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Encoding.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="104" column="0" selection-start="2965" selection-end="2965" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="AbstractIO.java" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractIO.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="109" column="0" selection-start="2545" selection-end="2545" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -230,22 +326,22 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Ibuffer.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ByteIO.java" />
-        <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/T.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractIO.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Internal.java" />
         <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/Main.java" />
         <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/ProtobufSemantics.java" />
+        <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/Primtests.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Coding.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ProtobufCoding.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XdrCoding.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractMessage.java" />
+        <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/Enumtests.java" />
         <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/Msgtests.java" />
         <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/generators/java/JavaGenerator.java" />
         <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/TestAst.java" />
-        <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/Primtests.java" />
         <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ASTRuntime.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Coding.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ProtobufCoding.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractMessage.java" />
-        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XdrCoding.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ProtobufRuntime.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XDRRuntime.java" />
+        <option value="$PROJECT_DIR$/../src/test/java/unidata/ast/test/Bytetests.java" />
+        <option value="$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XDREncoding.java" />
       </list>
     </option>
   </component>
@@ -258,6 +354,25 @@
   <component name="ModuleEditorState">
     <option name="LAST_EDITED_MODULE_NAME" />
     <option name="LAST_EDITED_TAB_NAME" />
+  </component>
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State>
+            <id />
+          </State>
+          <State>
+            <id>Spelling</id>
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>Spelling</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
     <OptionsSetting value="true" id="Add" />
@@ -295,7 +410,7 @@
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="MemberChooser.sorted" value="false" />
     <property name="recentsLimit" value="5" />
-    <property name="options.lastSelected" value="preferences.externalResources" />
+    <property name="options.lastSelected" value="Errors" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../src/test/java/unidata/ast/test" />
     <property name="project.structure.side.proportion" value="0.18208374" />
     <property name="MemberChooser.copyJavadoc" value="false" />
@@ -303,9 +418,9 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="MemberChooser.showClasses" value="true" />
     <property name="GoToClass.includeLibraries" value="false" />
-    <property name="dynamic.classpath" value="false" />
-    <property name="options.splitter.details.proportions" value="0.2" />
     <property name="options.searchVisible" value="true" />
+    <property name="options.splitter.details.proportions" value="0.2" />
+    <property name="dynamic.classpath" value="false" />
   </component>
   <component name="RunManager" selected="Application.test">
     <configuration default="true" type="Remote" factoryName="Remote">
@@ -414,7 +529,7 @@
     <configuration default="false" name="test" type="Application" factoryName="Application">
       <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
       <option name="MAIN_CLASS_NAME" value="unidata.ast.test.TestAst" />
-      <option name="VM_PARAMETERS" value="-ea -Dcoding=xdr" />
+      <option name="VM_PARAMETERS" value="-ea -Dencoding=xdr" />
       <option name="PROGRAM_PARAMETERS" value="" />
       <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test" />
       <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="false" />
@@ -474,28 +589,28 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-9" y="0" width="1298" height="818" extended-state="0" />
+    <frame x="-9" y="-9" width="1298" height="818" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Phing Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4414003" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4414003" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" x="59" y="335" width="1212" height="440" />
       <window_info id="IDEtalk Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="IDEtalk" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24657534" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.24174918" sideWeight="0.5585997" order="1" side_tool="true" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.2310231" sideWeight="0.6712329" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32920793" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39933994" sideWeight="0.5585997" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.6712329" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32876712" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32115677" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.24657534" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
     </layout>
@@ -581,11 +696,6 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/ASTDefault.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="264" column="113" selection-start="5821" selection-end="5821" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/Main.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="129" column="67" selection-start="4924" selection-end="4924" vertical-scroll-proportion="0.0" />
@@ -606,59 +716,76 @@
         <state line="231" column="0" selection-start="7421" selection-end="7421" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Bytetests.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="48" column="0" selection-start="1054" selection-end="1054" vertical-scroll-proportion="0.29661018" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Msgtests.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="136" column="0" selection-start="2845" selection-end="2845" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ProtobufCoding.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="489" column="30" selection-start="11771" selection-end="11771" vertical-scroll-proportion="0.8982229" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Coding.java">
       <provider selected="true" editor-type-id="text-editor">
         <state line="174" column="25" selection-start="6094" selection-end="6094" vertical-scroll-proportion="0.7253635" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractIO.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="99" column="0" selection-start="2302" selection-end="2302" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/compiler/generators/java/JavaGenerator.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="956" column="117" selection-start="31032" selection-end="31032" vertical-scroll-proportion="0.0" />
+        <state line="695" column="46" selection-start="22361" selection-end="22361" vertical-scroll-proportion="0.02881356" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XdrCoding.java">
+    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Enumtests.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="211" column="0" selection-start="5674" selection-end="5674" vertical-scroll-proportion="0.0" />
+        <state line="127" column="40" selection-start="3446" selection-end="3446" vertical-scroll-proportion="0.48135594" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Primtests.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="114" column="0" selection-start="3352" selection-end="3352" vertical-scroll-proportion="0.0" />
+        <state line="538" column="0" selection-start="16480" selection-end="16480" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Msgtests.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="115" column="115" selection-start="2340" selection-end="2340" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/Bytetests.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="56" column="0" selection-start="1141" selection-end="1141" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractMessage.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="122" column="0" selection-start="3493" selection-end="3493" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/TestAst.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="240" column="120" selection-start="7130" selection-end="7130" vertical-scroll-proportion="0.0" />
+        <state line="107" column="0" selection-start="2981" selection-end="2981" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/ASTRuntime.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="546" column="92" selection-start="12603" selection-end="12603" vertical-scroll-proportion="0.086440675">
+        <state line="293" column="0" selection-start="8084" selection-end="8084" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../src/test/java/unidata/ast/test/TestAst.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="231" column="0" selection-start="7094" selection-end="7094" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/AbstractIO.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="109" column="0" selection-start="2545" selection-end="2545" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/Encoding.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="104" column="0" selection-start="2965" selection-end="2965" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../src/main/java/unidata/ast/runtime/XDREncoding.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="56" column="36" selection-start="2596" selection-end="2596" vertical-scroll-proportion="0.38643068">
           <folding />
         </state>
       </provider>
